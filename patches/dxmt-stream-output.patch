@@ -27,7 +27,7 @@ diff --git a/src/airconv/dxbc_converter.cpp b/src/airconv/dxbc_converter.cpp
 index ce009f9..526652a 100644
 --- a/src/airconv/dxbc_converter.cpp
 +++ b/src/airconv/dxbc_converter.cpp
-@@ -848,8 +848,20 @@ llvm::Error convertDXBC(
+@@ -848,8 +848,23 @@ llvm::Error convertDXBC(
  bool CheckGSBBIsPassThrough(dxmt::dxbc::BasicBlock *bb) {
    using namespace dxmt::dxbc;
    if (bb->instructions.any(patterns{
@@ -38,7 +38,10 @@ index ce009f9..526652a 100644
 +          // only an input copied unchanged to the output with its register
 +          auto dst = std::get_if<DstOperandOutput>(&mov.dst);
 +          auto src = std::get_if<SrcOperandInputICP>(&mov.src);
-+          if (mov._.saturate || !dst || !src || src->_.abs || src->_.neg || dst->regid != src->regid)
++          if (mov._.saturate || !dst || !src || src->_.abs || src->_.neg)
++            return true;
++          auto src_regid = std::get_if<uint32_t>(&src->regid);
++          if (!src_regid || dst->regid != *src_regid)
 +            return true;
 +          uint8_t swizzle[4] = {src->_.swizzle.x, src->_.swizzle.y, src->_.swizzle.z, src->_.swizzle.w};
 +          for (uint8_t c = 0; c < 4; c++)
@@ -50,7 +53,7 @@ index ce009f9..526652a 100644
          [](auto &) { return true; }
        }))
      return false;
-@@ -1246,6 +1258,9 @@ AIRCONV_API int SM50Initialize(
+@@ -1246,6 +1261,9 @@ AIRCONV_API int SM50Initialize(
            !(CheckGSBBIsPassThrough(sm50_shader->entry()) &&
              CheckGSSignatureIsPassThrough(inputParser, outputParser, pRefl->GeometryShader.Data))) {
          pRefl->GeometryShader.GSPassThrough = ~0u;

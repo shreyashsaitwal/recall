@@ -82,7 +82,7 @@ def prepare_source(work):
     # Stream output through a point pass-through geometry shader, which Overwatch uses for the buffer
     # behind many particle effects: every such draw was dropped and the effects flickered.
     stream_output=ROOT/'patches/dxmt-stream-output.patch'
-    if hashlib.sha256(stream_output.read_bytes()).hexdigest()!='b2478adc746e71c42e785c5652afbe6b27191dd7e17082f8280bedc21b18fbf8':raise ValueError('Accepted stream output patch changed')
+    if hashlib.sha256(stream_output.read_bytes()).hexdigest()!='ce99733a5e70c25972b1142f74babc379951aaccdb8c01521e385b26af2b12b6':raise ValueError('Accepted stream output patch changed')
     check=subprocess.run(['git','apply','--check',str(stream_output)],cwd=source,capture_output=True)
     if check.returncode==0:run('git','apply',stream_output,cwd=source)
     else:run('git','apply','--reverse','--check',stream_output,cwd=source)

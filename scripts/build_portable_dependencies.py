@@ -66,8 +66,9 @@ def build(work, jobs, only=None):
     # xcode-select points at.
     env.update(DEVELOPER_DIR='/Library/Developer/CommandLineTools',
                SDKROOT='/Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk')
-    env.update(PATH=str(prefix / 'bin') + ':/usr/bin:/bin:/usr/sbin:/sbin',
-               CC='/usr/bin/clang -arch x86_64', CXX='/usr/bin/clang++ -arch x86_64',
+    clt_bin = '/Library/Developer/CommandLineTools/usr/bin'
+    env.update(PATH=str(prefix / 'bin') + ':' + clt_bin + ':/usr/bin:/bin:/usr/sbin:/sbin',
+               CC=clt_bin + '/clang -arch x86_64', CXX=clt_bin + '/clang++ -arch x86_64',
                CFLAGS='-O2 -g0 -ffile-prefix-map=' + str(work) + '=/build/overwatch-2-mac',
                LDFLAGS='-L' + str(prefix / 'lib'), CPPFLAGS='-I' + str(prefix / 'include'),
                PKG_CONFIG_LIBDIR=str(prefix / 'lib/pkgconfig'), PKG_CONFIG_PATH='',

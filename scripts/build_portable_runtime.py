@@ -149,11 +149,12 @@ def build(work, tools, headers, jobs):
     # Phase 2 was compiled by the Command Line Tools clang (2100.1.1.101) with
     # the macOS 26.5 SDK. An Xcode update would otherwise switch /usr/bin/clang
     # and the SDK under an existing build tree.
+    clt_bin = '/Library/Developer/CommandLineTools/usr/bin'
     env['DEVELOPER_DIR'] = '/Library/Developer/CommandLineTools'
     env['SDKROOT'] = '/Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk'
     env['PATH'] = ':'.join([str(tools / 'bison/bin'),
                           str(tools / 'llvm-mingw-20251216-ucrt-macos-universal/bin'),
-                          '/usr/bin', '/bin', '/usr/sbin', '/sbin'])
+                          clt_bin, '/usr/bin', '/bin', '/usr/sbin', '/sbin'])
     env['MACOSX_DEPLOYMENT_TARGET'] = '26.0'
     flags = '-O2 -g0 -ffile-prefix-map=' + str(work) + '=/build/overwatch-2-mac'
     logdir = work / 'build-logs'
@@ -164,7 +165,7 @@ def build(work, tools, headers, jobs):
                 run(['make', 'distclean'], cwd=ft, env=env, stdout=log, stderr=subprocess.STDOUT)
             run(['/usr/bin/arch', '-x86_64', './configure', '--prefix=' + str(deps),
                  '--without-harfbuzz', '--without-png', '--without-brotli', '--without-bzip2',
-                 '--enable-shared', '--disable-static', 'CC=/usr/bin/clang -arch x86_64',
+                 '--enable-shared', '--disable-static', 'CC=' + clt_bin + '/clang -arch x86_64',
                  'CFLAGS=' + flags], cwd=ft, env=env, stdout=log, stderr=subprocess.STDOUT)
             (ft / '.portable-configured').write_text(str(deps))
         if (ft / '.portable-configured').read_text() != str(deps):
@@ -193,7 +194,7 @@ def build(work, tools, headers, jobs):
                  'SDL2_LIBS=-L' + str(work / 'clean-deps/lib') + ' -lSDL2',
                  'LDFLAGS=-Wl,-headerpad,0x1000 -L' + str(deps / 'lib'), 'CFLAGS=' + flags,
                  'CROSSCFLAGS=' + flags,
-                 'CC=/usr/bin/clang -arch x86_64', 'CXX=/usr/bin/clang++ -arch x86_64'],
+                 'CC=' + clt_bin + '/clang -arch x86_64', 'CXX=' + clt_bin + '/clang++ -arch x86_64'],
                 cwd=builddir, env=env, stdout=log, stderr=subprocess.STDOUT)
             configuration.write_text('vulkan-sdl2-enabled-v1\n')
         config = builddir / 'include/config.h'
