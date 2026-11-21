@@ -3,41 +3,41 @@
  "status": "release 1.0.0 source",
  "sources": {
   "dxmt": {
-   "url": "https://github.com/NerRobDog/dxmt",
-   "commit": "c5dc3a0dfe9108e667da43de871324bd298c9c02",
+   "url": "https://github.com/shreyashsaitwal/dxmt",
+   "commit": "53ac94701fa76e6696af0926e18f913c5a2e5ffa",
    "license": "LGPL-2.1-or-later",
    "patch": "patches/dxmt-v1-private.patch",
-   "patch_sha256": "5afcbde9512381c37e975450d08f7fd3cef1e8755739f1f5b4ae8f1563de5199",
+   "patch_sha256": "0d800ecb518731b1041e54b48e022c05771c075726d69101a403d80eec4ced79",
    "directx_headers_commit": "9df86f2341616ef1888ae59919feaa6d4fad693d",
    "additional_patches": [
     {
      "patch": "patches/dxmt-v1-performance.patch",
-     "sha256": "b119feb670a3e2ffe656159118e99a75abc5b9a8097e77096c512a01b81861f2",
+     "sha256": "102b9665738674907e7aeeb39e9eb659f7cec1e8e5f916a54d93e1934bd0746e",
      "applies_after": "patches/dxmt-v1-private.patch"
     },
     {
      "patch": "patches/dxmt-portable-metal.patch",
-     "sha256": "3b9d6a3248c62e8eb3b623fbd3f5c4939d6973dfa366e827b7d25e814428745d",
+     "sha256": "6960ec73a2e862f4e10063d535804bb50c09c5ee769bbb7ba61fd6d1d7b77445",
      "applies_after": "patches/dxmt-v1-performance.patch"
     },
     {
      "patch": "patches/dxmt-metalfx-upscaling.patch",
-     "sha256": "87ab3e3a74a1c140653d6d66cda6576049472c8999afab68bccc866e48028b17",
+     "sha256": "8075dc2b4af2d249e5a354e7584f233c02b89b85d58c8e0d9b2e58fccb6e47dd",
      "applies_after": "patches/dxmt-portable-metal.patch"
     },
     {
      "patch": "patches/dxmt-shader-pack.patch",
-     "sha256": "26b64c19f499e4e7fbccfa9402ab0bdd5a0e383af2d5098aa00c9abcd7182773",
+     "sha256": "22d0335c7b91ae586ed16a085a18f08d27b33cbf4b0bc090fe5552ae92f1d6d5",
      "applies_after": "patches/dxmt-metalfx-upscaling.patch"
     },
     {
      "patch": "patches/dxmt-gpu-errors.patch",
-     "sha256": "384d8d252ae9bf9baa0b37f9cf9d1617665b4fdbcb9d2f0801cc138694aee207",
+     "sha256": "c9ce885185d1a17b16c5ae70a8ba4878a49185452be09d5f8c1400dd82a881bc",
      "applies_after": "patches/dxmt-shader-pack.patch"
     },
     {
      "patch": "patches/dxmt-stream-output.patch",
-     "sha256": "4361f2d828b5761ea22fde36d0c02af2562f7f4a19a68e143b7ab53003f518ab",
+     "sha256": "b2478adc746e71c42e785c5652afbe6b27191dd7e17082f8280bedc21b18fbf8",
      "applies_after": "patches/dxmt-gpu-errors.patch"
     }
    ],
@@ -147,7 +147,7 @@
  "patches": [
   {
    "path": "patches/dxmt-v1-private.patch",
-   "sha256": "5afcbde9512381c37e975450d08f7fd3cef1e8755739f1f5b4ae8f1563de5199"
+   "sha256": "0d800ecb518731b1041e54b48e022c05771c075726d69101a403d80eec4ced79"
   },
   {
    "path": "patches/wine-v1-canvas.patch",
@@ -159,19 +159,19 @@
   },
   {
    "path": "patches/dxmt-v1-performance.patch",
-   "sha256": "b119feb670a3e2ffe656159118e99a75abc5b9a8097e77096c512a01b81861f2"
+   "sha256": "102b9665738674907e7aeeb39e9eb659f7cec1e8e5f916a54d93e1934bd0746e"
   },
   {
    "path": "patches/dxmt-portable-metal.patch",
-   "sha256": "3b9d6a3248c62e8eb3b623fbd3f5c4939d6973dfa366e827b7d25e814428745d"
+   "sha256": "6960ec73a2e862f4e10063d535804bb50c09c5ee769bbb7ba61fd6d1d7b77445"
   },
   {
    "path": "patches/dxmt-metalfx-upscaling.patch",
-   "sha256": "87ab3e3a74a1c140653d6d66cda6576049472c8999afab68bccc866e48028b17"
+   "sha256": "8075dc2b4af2d249e5a354e7584f233c02b89b85d58c8e0d9b2e58fccb6e47dd"
   },
   {
    "path": "patches/dxmt-shader-pack.patch",
-   "sha256": "26b64c19f499e4e7fbccfa9402ab0bdd5a0e383af2d5098aa00c9abcd7182773"
+   "sha256": "22d0335c7b91ae586ed16a085a18f08d27b33cbf4b0bc090fe5552ae92f1d6d5"
   },
   {
    "path": "patches/wine-portable-directory-boolean.patch",

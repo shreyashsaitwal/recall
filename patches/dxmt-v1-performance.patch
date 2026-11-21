@@ -1,5 +1,5 @@
 diff --git a/src/d3d11/d3d11.cpp b/src/d3d11/d3d11.cpp
-index c20449c..a783ede 100644
+index 948dc84..044963c 100644
 --- a/src/d3d11/d3d11.cpp
 +++ b/src/d3d11/d3d11.cpp
 @@ -24,6 +24,7 @@
@@ -26,10 +26,10 @@ index c20449c..a783ede 100644
    } catch (const MTLD3DError &e) {
      Logger::err("D3D11CoreCreateDevice: Failed to create D3D11 device");
 diff --git a/src/d3d11/d3d11_context_imm.cpp b/src/d3d11/d3d11_context_imm.cpp
-index aa671c3..112e978 100644
+index 1e9233f..68c5596 100644
 --- a/src/d3d11/d3d11_context_imm.cpp
 +++ b/src/d3d11/d3d11_context_imm.cpp
-@@ -428,7 +428,11 @@ public:
+@@ -442,7 +442,11 @@ public:
      switch (desc.Query) {
      case D3D11_QUERY_EVENT:
      case D3D11_QUERY_TIMESTAMP_DISJOINT: {
@@ -43,10 +43,10 @@ index aa671c3..112e978 100644
          break;
        case EventState::Stall:
 diff --git a/src/d3d11/d3d11_context_impl.cpp b/src/d3d11/d3d11_context_impl.cpp
-index 29d2626..e1161cb 100644
+index 780b6bb..5f51c4e 100644
 --- a/src/d3d11/d3d11_context_impl.cpp
 +++ b/src/d3d11/d3d11_context_impl.cpp
-@@ -679,6 +679,7 @@ public:
+@@ -701,6 +701,7 @@ public:
    STDMETHODCALLTYPE
    ClearUnorderedAccessViewUint(D3D11UnorderedAccessView *pUAV, const UINT Values[4]) {
      InvalidateCurrentPass(true);
@@ -54,7 +54,7 @@ index 29d2626..e1161cb 100644
      SwitchToComputeEncoder();
      D3D11_UNORDERED_ACCESS_VIEW_DESC desc;
      pUAV->GetDesc(&desc);
-@@ -749,6 +750,7 @@ public:
+@@ -771,6 +772,7 @@ public:
    STDMETHODCALLTYPE
    ClearUnorderedAccessViewFloat(D3D11UnorderedAccessView *pUAV, const FLOAT Values[4])  {
      InvalidateCurrentPass(true);
@@ -62,7 +62,7 @@ index 29d2626..e1161cb 100644
      SwitchToComputeEncoder();
      D3D11_UNORDERED_ACCESS_VIEW_DESC desc;
      pUAV->GetDesc(&desc);
-@@ -2523,6 +2525,7 @@ public:
+@@ -2541,6 +2543,7 @@ public:
              enc.bindOutputBuffer<PipelineStage::Compute>(Slot, forward_rc(buffer), viewId, forward_rc(counter), slice);
            });
          } else {
@@ -70,7 +70,7 @@ index 29d2626..e1161cb 100644
            EmitST([=, texture = pUAV->texture(), viewId = pUAV->viewId()](ArgumentEncodingContext &enc) mutable {
              enc.bindOutputTexture<PipelineStage::Compute>(Slot, forward_rc(texture), viewId);
            });
-@@ -2894,6 +2897,7 @@ public:
+@@ -2912,6 +2915,7 @@ public:
                enc.bindOutputBuffer<PipelineStage::Pixel>(Slot, forward_rc(buffer), viewId, forward_rc(counter), slice);
              });
            } else {
@@ -78,7 +78,7 @@ index 29d2626..e1161cb 100644
              EmitST([=, texture = pUAV->texture(), viewId = pUAV->viewId()](ArgumentEncodingContext &enc) mutable {
                enc.bindOutputTexture<PipelineStage::Pixel>(Slot, forward_rc(texture), viewId);
              });
-@@ -4572,6 +4576,48 @@ public:
+@@ -4590,6 +4594,48 @@ public:
      cmdbuf_state = BlitKind;
    }
  
@@ -128,7 +128,7 @@ index 29d2626..e1161cb 100644
    Switch to compute encoder and set all states (expect for pipeline state)
    */
 diff --git a/src/d3d11/d3d11_device.cpp b/src/d3d11/d3d11_device.cpp
-index 7cf82b7..1b1b542 100644
+index f9a3de6..2c07925 100644
 --- a/src/d3d11/d3d11_device.cpp
 +++ b/src/d3d11/d3d11_device.cpp
 @@ -1,3 +1,4 @@
@@ -154,7 +154,7 @@ index 7cf82b7..1b1b542 100644
  friend class MTLD3D11DXGIDevice;
  public:
    MTLD3D11DeviceImpl(
-@@ -1069,6 +1072,38 @@ public:
+@@ -1077,6 +1080,38 @@ public:
      return context_.get();
    };
  
@@ -193,7 +193,7 @@ index 7cf82b7..1b1b542 100644
    virtual unsigned int GetDirectXVersion() final {
      return feature_flags_ & 0x80000000 ? 10 : 11;
    };
-@@ -1125,6 +1160,13 @@ private:
+@@ -1133,6 +1168,13 @@ private:
    std::unique_ptr<MTLD3D11DeviceContextBase> context_;
    std::unique_ptr<MTLD3D10Device> d3d10_;
    D3D11Multithread d3dmt_;
@@ -207,7 +207,7 @@ index 7cf82b7..1b1b542 100644
  };
  
  /**
-@@ -1180,6 +1222,11 @@ public:
+@@ -1188,6 +1230,11 @@ public:
      if (riid == __uuidof(ID3D11Device) || riid == __uuidof(ID3D11Device1) ||
          riid == __uuidof(ID3D11Device2) || riid == __uuidof(ID3D11Device3) ||
          riid == __uuidof(ID3D11Device4) || riid == __uuidof(ID3D11Device5)) {
@@ -219,7 +219,7 @@ index 7cf82b7..1b1b542 100644
        *ppvObject = ref_and_cast<ID3D11Device>(&d3d11_device_);
        return S_OK;
      }
-@@ -1194,6 +1241,11 @@ public:
+@@ -1205,6 +1252,11 @@ public:
        return S_OK;
      }
  
@@ -343,10 +343,10 @@ index fe00591..35bf49e 100644
  
  std::unique_ptr<MTLCompiledGraphicsPipeline>
 diff --git a/src/d3d11/d3d11_pipeline_cache.cpp b/src/d3d11/d3d11_pipeline_cache.cpp
-index fe4299f..be3eace 100644
+index fb75e4f..a5bf0b9 100644
 --- a/src/d3d11/d3d11_pipeline_cache.cpp
 +++ b/src/d3d11/d3d11_pipeline_cache.cpp
-@@ -8,10 +8,14 @@
+@@ -8,11 +8,15 @@
  #include "dxmt_tasks.hpp"
  #include "log/log.hpp"
  #include "sha1/sha1_util.hpp"
@@ -355,13 +355,14 @@ index fe4299f..be3eace 100644
  #include "../d3d10/d3d10_shader.hpp"
  #include "../d3d10/d3d10_input_layout.hpp"
  #include <algorithm>
+ #include <atomic>
 +#include <cctype>
  #include <cstring>
 +#include <string>
  #include <shared_mutex>
  
  namespace dxmt {
-@@ -84,6 +88,8 @@ class PipelineCache : public MTLD3D11PipelineCacheBase {
+@@ -85,6 +89,8 @@ class PipelineCache : public MTLD3D11PipelineCacheBase {
      MTL_SHADER_REFLECTION reflection_;
      MTL_SM50_SHADER_ARGUMENT *arguments_info_buffer;
      std::unordered_map<ShaderVariant, std::unique_ptr<CompiledShader>> variants;
@@ -370,7 +371,7 @@ index fe4299f..be3eace 100644
  
      /* IR lifetime management (d3d11.releaseShaderIR): a copy of the DXBC
       * blob outlives the parsed IR so that the IR can be rematerialized on
-@@ -135,7 +141,25 @@ class PipelineCache : public MTLD3D11PipelineCacheBase {
+@@ -136,7 +142,25 @@ class PipelineCache : public MTLD3D11PipelineCacheBase {
      virtual MTL_SM50_SHADER_ARGUMENT *arguments_info() {
        return arguments_info_buffer + reflection_.NumConstantBuffers;
      };
@@ -396,7 +397,7 @@ index fe4299f..be3eace 100644
        auto c = variants.insert({variant, nullptr});
        if (c.second) {
          c.first->second = std::visit(
-@@ -144,11 +168,51 @@ class PipelineCache : public MTLD3D11PipelineCacheBase {
+@@ -145,11 +169,51 @@ class PipelineCache : public MTLD3D11PipelineCacheBase {
              },
              variant);
          cache->scheduler_.submit(c.first->second.get());
@@ -448,7 +449,7 @@ index fe4299f..be3eace 100644
      void store_dxbc(const void *pBytecode, size_t BytecodeLength) {
        dxbc_ = malloc(BytecodeLength);
        dxbc_length_ = BytecodeLength;
-@@ -297,6 +361,71 @@ class PipelineCache : public MTLD3D11PipelineCacheBase {
+@@ -298,6 +362,71 @@ class PipelineCache : public MTLD3D11PipelineCacheBase {
    // Join workers before destroying the shader and pipeline objects they reference.
    task_scheduler<ThreadpoolWork *> scheduler_;
  
@@ -520,7 +521,7 @@ index fe4299f..be3eace 100644
    CachedSM50Shader *CreateShader(const void *pBytecode,
                                   uint32_t BytecodeLength) {
      auto sha1 = Sha1HashState::compute(pBytecode, BytecodeLength);
-@@ -342,6 +471,19 @@ class PipelineCache : public MTLD3D11PipelineCacheBase {
+@@ -343,6 +472,19 @@ class PipelineCache : public MTLD3D11PipelineCacheBase {
      if (!managed_shader) {
        return E_FAIL;
      }
@@ -540,7 +541,7 @@ index fe4299f..be3eace 100644
      *ppShader =
          ref(new TShaderBase<ID3D11VertexShader, MTLD3D10VertexShader>(device, managed_shader));
      return S_OK;
-@@ -353,6 +495,9 @@ class PipelineCache : public MTLD3D11PipelineCacheBase {
+@@ -354,6 +496,9 @@ class PipelineCache : public MTLD3D11PipelineCacheBase {
      if (!managed_shader) {
        return E_FAIL;
      }
@@ -550,7 +551,7 @@ index fe4299f..be3eace 100644
      *ppShader = ref(new TShaderBase<ID3D11PixelShader, MTLD3D10PixelShader>(device, managed_shader));
      return S_OK;
    }
-@@ -425,8 +570,22 @@ class PipelineCache : public MTLD3D11PipelineCacheBase {
+@@ -426,8 +571,22 @@ class PipelineCache : public MTLD3D11PipelineCacheBase {
        input_layouts.emplace(buffer, std::make_unique<CachedInputLayout>(
                                          std::move(buffer), input_slot_mask));
      }
@@ -4165,10 +4166,10 @@ index 0000000..419d7d2
 +    return real_->CreateFence(initial_value, flags, iid, fence); \
 +  }
 diff --git a/src/d3d11/d3d11_shader.cpp b/src/d3d11/d3d11_shader.cpp
-index 1c121c7..285cbb9 100644
+index 4b6e6ea..c2a2b8c 100644
 --- a/src/d3d11/d3d11_shader.cpp
 +++ b/src/d3d11/d3d11_shader.cpp
-@@ -78,6 +78,12 @@ public:
+@@ -79,6 +79,12 @@ public:
      WMT::Reference<WMT::DispatchData> lib_data = shader_->find_cached_variant(variant_digest_);
      trace.cache_read_us = trace.elapsed(phase_started);
  
@@ -4181,7 +4182,7 @@ index 1c121c7..285cbb9 100644
      while (lib_data != nullptr) {
        phase_started = ShaderCompileTrace::timestamp();
        auto library = device_->GetMTLDevice().newLibrary(lib_data, err);
-@@ -132,6 +138,19 @@ public:
+@@ -133,6 +139,19 @@ public:
          return this;
        }
  
@@ -4201,7 +4202,7 @@ index 1c121c7..285cbb9 100644
        struct BitcodeGuard {
          sm50_bitcode_t bitcode;
          ~BitcodeGuard() { SM50DestroyBitcode(bitcode); }
-@@ -175,7 +194,10 @@ public:
+@@ -176,7 +195,10 @@ public:
  
    void SetIsDone(bool state) { ready_.store(state); }
  
@@ -4227,7 +4228,7 @@ index c42132f..5ef7924 100644
  
  class Shader {
 diff --git a/src/d3d11/d3d11_swapchain.cpp b/src/d3d11/d3d11_swapchain.cpp
-index 60bb94d..fab95a4 100644
+index 2cf4f76..7bd86a2 100644
 --- a/src/d3d11/d3d11_swapchain.cpp
 +++ b/src/d3d11/d3d11_swapchain.cpp
 @@ -14,6 +14,7 @@
@@ -4238,7 +4239,7 @@ index 60bb94d..fab95a4 100644
  #include "util_cpu_fence.hpp"
  #include "util_env.hpp"
  #include "util_string.hpp"
-@@ -868,6 +869,9 @@ public:
+@@ -875,6 +876,9 @@ public:
      if (PresentFlags & DXGI_PRESENT_TEST)
        return hr;
  
@@ -4292,13 +4293,13 @@ index 1faf496..2744382 100644
      if (!(pDevice->GetLocalD3DKMT() & 0xc0000000)) {
        ERR("DeviceTexture: Invalid device handle");
 diff --git a/src/d3d11/meson.build b/src/d3d11/meson.build
-index 948db2a..918f2cc 100644
+index 4723852..1352b37 100644
 --- a/src/d3d11/meson.build
 +++ b/src/d3d11/meson.build
-@@ -27,6 +27,7 @@ d3d11_src = [
-   'd3d11_context_def.cpp',
+@@ -28,6 +28,7 @@ d3d11_src = [
    'd3d11_multithread.cpp',
    'd3d11_fence.cpp',
+   'd3d11_surface.cpp',
 +  'd3d11_recorder.cpp',
  ]
  
@@ -4572,10 +4573,10 @@ index be133dc..13337de 100644
      staging_allocator.free_blocks(internal_seq);
      copy_temp_allocator.free_blocks(internal_seq);
 diff --git a/src/dxmt/dxmt_command_queue.hpp b/src/dxmt/dxmt_command_queue.hpp
-index 80581c8..902a9bc 100644
+index 92f5098..1bbb874 100644
 --- a/src/dxmt/dxmt_command_queue.hpp
 +++ b/src/dxmt/dxmt_command_queue.hpp
-@@ -188,10 +188,25 @@ private:
+@@ -189,10 +189,25 @@ private:
    // slowly, late (fence already signalled, GPU may idle) shrinks it at once.
    bool pacing_enabled_ = false;
    int64_t pacing_target_us_ = 1000, pacing_max_us_ = 8000, pacing_sleep_us_ = 0, pacing_error_ema_us_ = 0;
@@ -4601,7 +4602,7 @@ index 80581c8..902a9bc 100644
    uint64_t frame_trace_owner_ = frame_trace_ ? frame_trace_->newOwner() : 0;
    FrameTelemetry::Stamp frame_log_last_{};
    uint64_t frame_log_compiles_ = 0;
-@@ -281,6 +296,23 @@ public:
+@@ -282,6 +297,23 @@ public:
      return statistics.at(frame_count);
    }
  
@@ -4625,7 +4626,7 @@ index 80581c8..902a9bc 100644
    void
    PresentBoundary() {
      statistics.compute(frame_count);
-@@ -295,7 +327,29 @@ public:
+@@ -296,7 +328,29 @@ public:
        auto t1 = clock::now();
        statistics.at(frame_count).present_latency_interval += (t1 - t0);
        latency_wait_us = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count();
@@ -4656,7 +4657,7 @@ index 80581c8..902a9bc 100644
          int64_t signaled_us = fence_signal_us_[(frame_count - latency) % kFenceRing].load(std::memory_order_acquire);
          int64_t arrived_us = std::chrono::duration_cast<std::chrono::microseconds>(t0.time_since_epoch()).count();
          // Positive: the game reached the fence early by this much. Negative: the
-@@ -324,6 +378,61 @@ public:
+@@ -325,6 +379,61 @@ public:
      FrameLogTick(latency_wait_us, pacing_us);
    }
  
@@ -4718,7 +4719,7 @@ index 80581c8..902a9bc 100644
    // CPU present-loop cadence, not physical drawable presentation or GPU time.
    // Compile starts remain a process-wide counter sampled at each boundary.
    void
-@@ -331,17 +440,50 @@ public:
+@@ -332,17 +441,50 @@ public:
      if (!frame_trace_) return;
      auto now = FrameTelemetry::stamp();
      uint64_t compiles_total = g_compiled_shader_variants.load(std::memory_order_relaxed);
@@ -4770,7 +4771,7 @@ index 80581c8..902a9bc 100644
  
    void SetMaxLatency(uint32_t value) { max_latency_.store(std::min(value ? value : 3u, max_latency_limit_), std::memory_order_relaxed); };
 diff --git a/src/dxmt/dxmt_context.cpp b/src/dxmt/dxmt_context.cpp
-index c8cd06d..a9a1b1a 100644
+index 7b29f1e..659e2eb 100644
 --- a/src/dxmt/dxmt_context.cpp
 +++ b/src/dxmt/dxmt_context.cpp
 @@ -1,3 +1,6 @@
@@ -4780,7 +4781,7 @@ index c8cd06d..a9a1b1a 100644
  /*
   * Copyright 2026 Feifan He for CodeWeavers
   *
-@@ -26,10 +29,13 @@
+@@ -26,6 +29,8 @@
  #include "wsi_platform.hpp"
  #include <cstdint>
  #include <cfloat>
@@ -4789,19 +4790,6 @@ index c8cd06d..a9a1b1a 100644
  
  namespace dxmt {
  
- ArgumentEncodingContext::ArgumentEncodingContext(CommandQueue &queue, WMT::Device device, InternalCommandLibrary &lib) :
-+    device_(device),
-     lib(lib),
-     emulated_cmd(device, lib, *this),
-     clear_rt_cmd(device, lib, *this),
-@@ -38,7 +44,6 @@ ArgumentEncodingContext::ArgumentEncodingContext(CommandQueue &queue, WMT::Devic
-     mv_scale_cmd(device, lib, *this),
-     tile_barrier_cmd(device, lib, *this),
-     timestamp_state_(device),
--    device_(device),
-     queue_(queue) {
-   dummy_sampler_info_.support_argument_buffers = true;
-   dummy_sampler_info_.border_color = WMTSamplerBorderColorTransparentBlack;
 @@ -860,6 +865,101 @@ ArgumentEncodingContext::$$setEncodingContext(uint64_t seq_id, uint64_t frame_id
  
  constexpr unsigned kEncoderOptimizerThreshold = 64;
@@ -4961,7 +4949,7 @@ index c8cd06d..a9a1b1a 100644
          data->fence_update.forEach([&](auto id) { encoder.updateFence(fence_pool_[id], WMTRenderStageFragment); });
          encoder.endEncoding();
 diff --git a/src/dxmt/dxmt_context.hpp b/src/dxmt/dxmt_context.hpp
-index 4fd51a7..2ecbf7f 100644
+index eabe872..5516e62 100644
 --- a/src/dxmt/dxmt_context.hpp
 +++ b/src/dxmt/dxmt_context.hpp
 @@ -41,6 +41,11 @@
@@ -4976,7 +4964,7 @@ index 4fd51a7..2ecbf7f 100644
  constexpr size_t kCommandChunkCPUHeapSize = 0x400000;
  constexpr size_t kCommandChunkGPUHeapSize = 0x400000;
  constexpr size_t kEncodingContextCPUHeapSize = 0x100000;
-@@ -829,6 +834,18 @@ public:
+@@ -829,6 +834,12 @@ public:
    uint32_t tess_num_output_control_point_element;
    uint32_t tess_threads_per_patch;
  
@@ -4986,23 +4974,9 @@ index 4fd51a7..2ecbf7f 100644
 +  uint64_t bench_label_frame = ~0ull;
 +  unsigned bench_label_index = 0;
 +
-+private:
-+  // Declared before the command helpers: ClearUAV's constructor builds its
-+  // pipelines through this device, and members initialize in declaration order.
-+  WMT::Device device_;
-+
-+public:
-   InternalCommandLibrary &lib;
-   EmulatedCommandContext emulated_cmd;
-   ClearRenderTargetContext clear_rt_cmd;
-@@ -918,7 +935,6 @@ private:
- 
-   uint64_t intrapass_barrier_control_bits_ = 0;
- 
--  WMT::Device device_;
-   CommandQueue& queue_;
- };
- 
+ private:
+   // Declared ahead of the command helpers below, which build their pipelines through this context
+   // in their constructors (ClearUAV reaches device_ through getComputePipeline): members start in
 diff --git a/src/dxmt/dxmt_frame_log.hpp b/src/dxmt/dxmt_frame_log.hpp
 index 520fd43..2a4ec63 100644
 --- a/src/dxmt/dxmt_frame_log.hpp
@@ -5043,10 +5017,10 @@ index 520fd43..2a4ec63 100644
              (unsigned long long)e.event_id, names[e.kind], (unsigned long long)e.owner_id,
              (unsigned long long)e.frame_id, (unsigned long long)e.chunk_id, (long long)e.end.unix_us,
 diff --git a/src/dxmt/dxmt_texture.hpp b/src/dxmt/dxmt_texture.hpp
-index 68d43cd..fe4aed3 100644
+index ba57499..2125499 100644
 --- a/src/dxmt/dxmt_texture.hpp
 +++ b/src/dxmt/dxmt_texture.hpp
-@@ -285,6 +285,32 @@ public:
+@@ -287,6 +287,32 @@ public:
  
    Rc<TextureAllocation> rename(Rc<TextureAllocation> &&newAllocation);
  
@@ -5079,7 +5053,7 @@ index 68d43cd..fe4aed3 100644
    Texture(const WMTTextureInfo &info, WMT::Device device);
  
    Texture(unsigned bytes_per_image, unsigned bytes_per_row, const WMTTextureInfo &info, WMT::Device device);
-@@ -299,6 +325,8 @@ private:
+@@ -301,6 +327,8 @@ private:
    Rc<TextureAllocation> current_;
    uint32_t version_ = 0;
    std::atomic<uint32_t> refcount_ = {0u};
@@ -5113,7 +5087,7 @@ index d50bdb4..e84bb44 100644
  endif
 \ No newline at end of file
 diff --git a/src/nvapi/nvapi.cpp b/src/nvapi/nvapi.cpp
-index e9007bb..3bf6da2 100644
+index e20b7f6..445c856 100644
 --- a/src/nvapi/nvapi.cpp
 +++ b/src/nvapi/nvapi.cpp
 @@ -3,10 +3,13 @@
@@ -5224,7 +5198,7 @@ index e9007bb..3bf6da2 100644
      return (void *)&NvAPI_Initialize;
    case 0x33c7358c:
 diff --git a/src/nvngx/nvngx.cpp b/src/nvngx/nvngx.cpp
-index 71055bc..4be074e 100644
+index 1b353e8..4be074e 100644
 --- a/src/nvngx/nvngx.cpp
 +++ b/src/nvngx/nvngx.cpp
 @@ -15,6 +15,7 @@ NVNGX_API NVNGX_RESULT
@@ -5273,7 +5247,7 @@ index 71055bc..4be074e 100644
      if (NVNGX_FAILED(parameters->Get(NVNGX_Parameter_MV_Scale_Y, &desc.MotionVectorScaleY)))
        desc.MotionVectorScaleY = 1.0;
 -    if (NVNGX_FAILED(parameters->Get(NVNGX_Parameter_DLSS_Pre_Exposure, &desc.PreExposure)))
--      desc.PreExposure = 0;
+-      desc.PreExposure = 1.0;
 +    // MetalFX multiplies the input color by the pre-exposure; NGX's default is 1.0.
 +    if (NVNGX_FAILED(parameters->Get(NVNGX_Parameter_DLSS_Pre_Exposure, &desc.PreExposure)) ||
 +        !(desc.PreExposure > 0))
@@ -9760,7 +9734,7 @@ index 8224a0c..267d15d 100644
    gpuEndTime() {
      return MTLCommandBuffer_property(handle, WMTCommandBufferPropertyGPUEndTime);
 diff --git a/src/winemetal/unix/winemetal_unix.c b/src/winemetal/unix/winemetal_unix.c
-index c71de47..2e71165 100644
+index 527ca7a..6fc91aa 100644
 --- a/src/winemetal/unix/winemetal_unix.c
 +++ b/src/winemetal/unix/winemetal_unix.c
 @@ -1,5 +1,6 @@
@@ -9792,7 +9766,7 @@ index c71de47..2e71165 100644
  typedef int NTSTATUS;
  #define STATUS_SUCCESS 0
  #define STATUS_UNSUCCESSFUL 0xC0000001
-@@ -1715,6 +1731,14 @@ _ConfigureMetalViewCanvas(void *obj) {
+@@ -1752,6 +1768,14 @@ _ConfigureMetalViewCanvas(void *obj) {
    return STATUS_SUCCESS;
  }
  
@@ -9807,7 +9781,7 @@ index c71de47..2e71165 100644
  static NTSTATUS
  _SetMetalViewFullscreen(void *obj) {
    struct unixcall_generic_obj_uint64_uint64_ret *params = obj;
-@@ -3321,6 +3345,7 @@ const void *__wine_unix_call_funcs[] = {
+@@ -3380,6 +3404,7 @@ const void *__wine_unix_call_funcs[] = {
      &_MTLTexture_getBytes,
      &_ConfigureMetalViewCanvas,
      &_SetMetalViewFullscreen,
@@ -9815,7 +9789,7 @@ index c71de47..2e71165 100644
  };
  
  #ifndef DXMT_NATIVE
-@@ -3473,5 +3498,6 @@ const void *__wine_unix_call_wow64_funcs[] = {
+@@ -3532,5 +3557,6 @@ const void *__wine_unix_call_wow64_funcs[] = {
      &_MTLTexture_getBytes,
      &_ConfigureMetalViewCanvas,
      &_SetMetalViewFullscreen,
@@ -9823,10 +9797,10 @@ index c71de47..2e71165 100644
  };
  #endif
 diff --git a/src/winemetal/winemetal.h b/src/winemetal/winemetal.h
-index eae75cc..09a4570 100644
+index a4f80df..655fa7b 100644
 --- a/src/winemetal/winemetal.h
 +++ b/src/winemetal/winemetal.h
-@@ -1775,6 +1775,9 @@ WINEMETAL_API void ReleaseMetalView(obj_handle_t view);
+@@ -1786,6 +1786,9 @@ WINEMETAL_API void ReleaseMetalView(obj_handle_t view);
  WINEMETAL_API uint32_t ConfigureMetalViewCanvas(obj_handle_t view, uint32_t width, uint32_t height);
  WINEMETAL_API uint32_t SetMetalViewFullscreen(obj_handle_t view, uint32_t width, uint32_t height, uint32_t enable);
  

@@ -1,5 +1,5 @@
 diff --git a/src/airconv/air_type.cpp b/src/airconv/air_type.cpp
-index 01fb51b..b23508a 100644
+index acbfcff..9222582 100644
 --- a/src/airconv/air_type.cpp
 +++ b/src/airconv/air_type.cpp
 @@ -64,7 +64,7 @@ AirType::AirType(LLVMContext &context) : context(context) {
@@ -12,7 +12,7 @@ index 01fb51b..b23508a 100644
      "dxmt_stream_output_buffer_entry"
    );
 diff --git a/src/airconv/airconv_public.h b/src/airconv/airconv_public.h
-index 15b51c1..cb7ea41 100644
+index e8bf54a..0250e7d 100644
 --- a/src/airconv/airconv_public.h
 +++ b/src/airconv/airconv_public.h
 @@ -88,6 +88,7 @@ struct MTL_GEOMETRY_SHADER_REFLECTION {
@@ -24,22 +24,10 @@ index 15b51c1..cb7ea41 100644
  
  struct MTL_POST_TESSELLATOR_REFLECTION {
 diff --git a/src/airconv/dxbc_converter.cpp b/src/airconv/dxbc_converter.cpp
-index 4b1387b..5227e9e 100644
+index ce009f9..526652a 100644
 --- a/src/airconv/dxbc_converter.cpp
 +++ b/src/airconv/dxbc_converter.cpp
-@@ -661,7 +661,10 @@ llvm::Error convert_dxbc_vertex_shader(
-       auto slot0_entry =
-           builder.CreateLoad(so_entries_type, builder.CreateConstInBoundsGEP1_32(so_entries_type, so_entries, 0));
-       auto slot0 = builder.CreateExtractValue(slot0_entry, {0});
--      auto adjusted_vertex_id = builder.CreateSub(vertex_id, base_vertex);
-+      auto vertices_per_instance = builder.CreateTrunc(builder.CreateExtractValue(slot0_entry, {1}), ctx.types._int);
-+      auto adjusted_vertex_id = builder.CreateAdd(
-+          builder.CreateSub(vertex_id, base_vertex), builder.CreateMul(ctx.resource.instance_id, vertices_per_instance)
-+      );
-       auto output_regs = builder.CreateBitOrPointerCast(
-         ctx.resource.output.ptr_int4, llvm::PointerType::get(ctx.types._int, 0)
-       );
-@@ -902,8 +905,20 @@ llvm::Error convertDXBC(
+@@ -848,8 +848,20 @@ llvm::Error convertDXBC(
  bool CheckGSBBIsPassThrough(dxmt::dxbc::BasicBlock *bb) {
    using namespace dxmt::dxbc;
    if (bb->instructions.any(patterns{
@@ -62,22 +50,37 @@ index 4b1387b..5227e9e 100644
          [](auto &) { return true; }
        }))
      return false;
-@@ -1299,8 +1314,9 @@ AIRCONV_API int SM50Initialize(
-           binding_srv_hi_mask || binding_srv_lo_mask ||
-           !CheckGSBBIsPassThrough(sm50_shader->entry())) {
+@@ -1246,6 +1258,9 @@ AIRCONV_API int SM50Initialize(
+           !(CheckGSBBIsPassThrough(sm50_shader->entry()) &&
+             CheckGSSignatureIsPassThrough(inputParser, outputParser, pRefl->GeometryShader.Data))) {
          pRefl->GeometryShader.GSPassThrough = ~0u;
 +        pRefl->GeometryShader.OutputIsInput = 0;
-       } else {
--        CheckGSSignatureIsPassThrough(
-+        pRefl->GeometryShader.OutputIsInput = CheckGSSignatureIsPassThrough(
-           inputParser, outputParser, pRefl->GeometryShader.Data
-         );
++      } else {
++        pRefl->GeometryShader.OutputIsInput = 1;
        }
+       pRefl->GeometryShader.Primitive = sm50_shader->gs_input_primitive;
+     }
+diff --git a/src/airconv/nt/dxbc_io_helper.cpp b/src/airconv/nt/dxbc_io_helper.cpp
+index 624cba4..043cd61 100644
+--- a/src/airconv/nt/dxbc_io_helper.cpp
++++ b/src/airconv/nt/dxbc_io_helper.cpp
+@@ -385,7 +385,10 @@ IOHelper::PopulateOutputStreamOutput(
+   );
+   auto slot0_entry = ir.CreateLoad(so_entries_type, ir.CreateConstInBoundsGEP1_32(so_entries_type, so_entries, 0));
+   auto slot0 = ir.CreateExtractValue(slot0_entry, {0});
+-  auto adjusted_vertex_id = ir.CreateSub(vertex_id, base_vertex);
++  auto vertices_per_instance = ir.CreateTrunc(ir.CreateExtractValue(slot0_entry, {1}), types._int);
++  auto adjusted_vertex_id = ir.CreateAdd(
++      ir.CreateSub(vertex_id, base_vertex), ir.CreateMul(io.instance_id, vertices_per_instance)
++  );
+   auto output_regs = ir.CreateBitOrPointerCast(io.output.ptr_int4, llvm::PointerType::get(types._int, 0));
+   for (unsigned i = 0; i < vertex_so->num_elements; i++) {
+     auto &element = vertex_so->elements[i];
 diff --git a/src/d3d11/d3d11_context_impl.cpp b/src/d3d11/d3d11_context_impl.cpp
-index b203443..3002bb4 100644
+index 6b09762..e99778e 100644
 --- a/src/d3d11/d3d11_context_impl.cpp
 +++ b/src/d3d11/d3d11_context_impl.cpp
-@@ -1281,6 +1281,8 @@ public:
+@@ -1305,6 +1305,8 @@ public:
      if (unlikely(!VertexCount))
        return;
      std::lock_guard<mutex_t> lock(mutex);
@@ -86,7 +89,7 @@ index b203443..3002bb4 100644
  
      WMTPrimitiveType Primitive;
      uint32_t ControlPointCount;
-@@ -1357,6 +1359,8 @@ public:
+@@ -1381,6 +1383,8 @@ public:
      if (unlikely(!VertexCountPerInstance || !InstanceCount))
        return;
      std::lock_guard<mutex_t> lock(mutex);
@@ -95,7 +98,7 @@ index b203443..3002bb4 100644
  
      WMTPrimitiveType Primitive;
      uint32_t ControlPointCount;
-@@ -2246,6 +2250,10 @@ public:
+@@ -2264,6 +2268,10 @@ public:
  
      if (!ValidateMultiSOTargets(NumBuffers, ppSOTargets))
        return;
@@ -106,7 +109,7 @@ index b203443..3002bb4 100644
  
      for (unsigned slot = 0; slot < D3D11_SO_BUFFER_SLOT_COUNT; slot++) {
        auto pBuffer = slot < NumBuffers ? GetResourceCommon(ppSOTargets[slot]) : nullptr;
-@@ -3274,6 +3282,34 @@ public:
+@@ -3292,6 +3300,34 @@ public:
    GetDynamicBufferAllocation(Rc<DynamicBuffer> &dynamic);
  
    uint64_t *allocated_encoder_argbuf_size_ = nullptr;
@@ -141,7 +144,7 @@ index b203443..3002bb4 100644
  
    uint64_t PreAllocateArgumentBuffer(size_t size, size_t alignment) {
      assert(allocated_encoder_argbuf_size_ && "otherwise invalid call");
-@@ -4483,6 +4519,15 @@ public:
+@@ -4501,6 +4537,15 @@ public:
          dsv_info.viewId = state_.OutputMerger.DSV->viewId();
          dsv_info.PixelFormat = state_.OutputMerger.DSV->pixelFormat();
          dsv_info.ReadOnlyFlags =  state_.OutputMerger.DSV->readonlyFlags();
@@ -158,7 +161,7 @@ index b203443..3002bb4 100644
          if (!state_.OutputMerger.UAVs.any_bound()) {
            DEBUG("No rendering attachment or uav is bounded");
 diff --git a/src/d3d11/d3d11_device.cpp b/src/d3d11/d3d11_device.cpp
-index 1b1b542..6f8c3ef 100644
+index 2c07925..e6ddd49 100644
 --- a/src/d3d11/d3d11_device.cpp
 +++ b/src/d3d11/d3d11_device.cpp
 @@ -3,6 +3,8 @@
@@ -231,10 +234,10 @@ index 8c03b2b..7191387 100644
      return hr;
    }
 diff --git a/src/d3d11/d3d11_shader.cpp b/src/d3d11/d3d11_shader.cpp
-index 285cbb9..96b514f 100644
+index c2a2b8c..99daafe 100644
 --- a/src/d3d11/d3d11_shader.cpp
 +++ b/src/d3d11/d3d11_shader.cpp
-@@ -412,6 +412,7 @@ CreateVariantShader(MTLD3D11Device *pDevice, ManagedShader shader,
+@@ -414,6 +414,7 @@ CreateVariantShader(MTLD3D11Device *pDevice, ManagedShader shader,
    Sha1HashState h;
    h.update(getGlobalShaderFlag());
    h.update(((IMTLD3D11StreamOutputLayout *)variant.stream_output_layout_handle)->Digest());
@@ -243,7 +246,7 @@ index 285cbb9..96b514f 100644
      h.update(variant.input_layout_handle->sha1());
    auto variant_digest = h.final();
 diff --git a/src/dxmt/dxmt_context.cpp b/src/dxmt/dxmt_context.cpp
-index 3ab25fb..a893f60 100644
+index 90fb27f..7dbf10b 100644
 --- a/src/dxmt/dxmt_context.cpp
 +++ b/src/dxmt/dxmt_context.cpp
 @@ -145,7 +145,7 @@ ArgumentEncodingContext::encodeStreamOutputBuffers<PipelineKind::Ordinary>(uint6
@@ -256,7 +259,7 @@ index 3ab25fb..a893f60 100644
    };
    {
 diff --git a/src/dxmt/dxmt_context.hpp b/src/dxmt/dxmt_context.hpp
-index ac5c664..e363eeb 100644
+index 8e64ec7..fb98ba4 100644
 --- a/src/dxmt/dxmt_context.hpp
 +++ b/src/dxmt/dxmt_context.hpp
 @@ -109,6 +109,7 @@ struct StreamOutputBinding {

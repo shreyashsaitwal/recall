@@ -1,5 +1,5 @@
 diff --git a/src/d3d11/d3d11_context_impl.cpp b/src/d3d11/d3d11_context_impl.cpp
-index e1161cb..b39df41 100644
+index 5f51c4e..584dfbc 100644
 --- a/src/d3d11/d3d11_context_impl.cpp
 +++ b/src/d3d11/d3d11_context_impl.cpp
 @@ -40,6 +40,7 @@
@@ -10,7 +10,7 @@ index e1161cb..b39df41 100644
  #include "util_math.hpp"
  #include "util_win32_compat.h"
  
-@@ -5229,6 +5230,10 @@ class MTLD3D11ContextExt : public IMTLD3D11ContextExt1 {
+@@ -5247,6 +5248,10 @@ class MTLD3D11ContextExt : public IMTLD3D11ContextExt1 {
      uint32_t output_height;
      Rc<TemporalScaler> scaler;
      Rc<Texture> mv_downscaled;
@@ -21,7 +21,7 @@ index e1161cb..b39df41 100644
    };
  public:
    MTLD3D11ContextExt(MTLD3D11DeviceContextImplBase<ContextInternalState> *context) : ctx_(context){};
-@@ -5285,8 +5290,40 @@ public:
+@@ -5304,8 +5309,40 @@ public:
        return;
      }
  
@@ -62,12 +62,13 @@ index e1161cb..b39df41 100644
  
      for(CachedTemporalScaler& entry: scaler_cache_) {
        if(pDesc->AutoExposure != entry.auto_exposure) continue;
-@@ -5297,10 +5334,14 @@ public:
+@@ -5316,11 +5353,15 @@ public:
        if(input->pixelFormat() != entry.color_pixel_format) continue;
        if(output->pixelFormat() != entry.output_pixel_format) continue;
        if(depth->pixelFormat() != entry.depth_pixel_format) continue;
 -      if(motion_vector_format != entry.motion_vector_pixel_format) continue;
 +      if(scaler_motion_format != entry.motion_vector_pixel_format) continue;
+       if(pDesc->MotionVectorInDisplayRes != (entry.mv_downscaled != nullptr)) continue;
 +      if(mv_offset != entry.mv_offset) continue;
 +      if(sharpen != entry.sharpen) continue;
  
@@ -78,7 +79,7 @@ index e1161cb..b39df41 100644
        break;
      }
  
-@@ -5309,12 +5350,14 @@ public:
+@@ -5329,12 +5370,14 @@ public:
        scaler_entry.color_pixel_format = input->pixelFormat();
        scaler_entry.output_pixel_format = output->pixelFormat();
        scaler_entry.depth_pixel_format = depth->pixelFormat();
@@ -95,7 +96,7 @@ index e1161cb..b39df41 100644
        scaler_entry.auto_exposure = pDesc->AutoExposure;
        scaler_entry.input_width = input->width();
        scaler_entry.input_height = input->height();
-@@ -5330,6 +5373,54 @@ public:
+@@ -5350,6 +5393,54 @@ public:
        info.input_content_max_scale =  3.0f;
        info.requires_synchronous_initialization = true;
        scaler_entry.scaler = new TemporalScaler(ctx_->device->GetMTLDevice(), info);
@@ -150,7 +151,7 @@ index e1161cb..b39df41 100644
        if (pDesc->MotionVectorInDisplayRes) {
          WMTTextureInfo tex_info;
          tex_info.width = scaler_entry.input_width;
-@@ -5361,8 +5452,8 @@ public:
+@@ -5381,8 +5472,8 @@ public:
                    exposure = std::move(exposure), scaler = std::move(scaler),
                    props =
                        WMTFXTemporalScalerProps{
@@ -161,7 +162,7 @@ index e1161cb..b39df41 100644
                            (bool)pDesc->InReset,
                            (bool)pDesc->DepthReversed,
                            pDesc->MotionVectorScaleX,
-@@ -5371,8 +5462,13 @@ public:
+@@ -5391,8 +5482,13 @@ public:
                            pDesc->JitterOffsetY,
                            pDesc->PreExposure,
                        },
@@ -176,12 +177,12 @@ index e1161cb..b39df41 100644
        auto mv_view = motion_vector->createView(
            {.format = motion_vector_format,
             .type = WMTTextureType2D,
-@@ -5397,10 +5493,21 @@ public:
+@@ -5417,10 +5513,21 @@ public:
          WMTFXTemporalScalerProps new_props = props;
          new_props.motion_vector_scale_x = 1.0;
          new_props.motion_vector_scale_y = 1.0;
--        enc.upscaleTemporal(input, output, depth, mv_downscaled, 0, exposure, scaler, new_props);
-+        enc.upscaleTemporal(input, target, depth, mv_downscaled, 0, exposure, scaler, new_props);
+-        enc.upscaleTemporal(input, output, depth, mv_downscaled, mv_downscaled->fullView, exposure, scaler, new_props);
++        enc.upscaleTemporal(input, target, depth, mv_downscaled, mv_downscaled->fullView, exposure, scaler, new_props);
 +      } else if (mv_offset_texture && enc.mv_scale_cmd.dispatchOffset(
 +                                          motion_vector, mv_view, mv_offset_texture, props.motion_vector_scale_x,
 +                                          props.motion_vector_scale_y, mv_offset_x, mv_offset_y,
@@ -749,10 +750,10 @@ index b32aa1c..673dd33 100644
      if (FAILED(hr)) {
        Logger::err("DXGI: CheckInterfaceSupport: Unsupported interface");
 diff --git a/src/dxmt/dxmt_command.cpp b/src/dxmt/dxmt_command.cpp
-index a36737a..ed488cd 100644
+index 6498ae1..80467aa 100644
 --- a/src/dxmt/dxmt_command.cpp
 +++ b/src/dxmt/dxmt_command.cpp
-@@ -496,6 +496,203 @@ struct downscale_dilated_mv_desc {
+@@ -346,6 +346,203 @@ struct downscale_dilated_mv_desc {
    float scale_y;
  };
  
@@ -957,10 +958,10 @@ index a36737a..ed488cd 100644
  MTLFXMVScaleContext::dispatch(
      const Rc<Texture> &dilated, TextureViewKey view_dilated, const Rc<Texture> &downscaled,
 diff --git a/src/dxmt/dxmt_command.hpp b/src/dxmt/dxmt_command.hpp
-index 0984bed..a4f3d57 100644
+index c9697ae..b96a32d 100644
 --- a/src/dxmt/dxmt_command.hpp
 +++ b/src/dxmt/dxmt_command.hpp
-@@ -259,10 +259,36 @@ public:
+@@ -234,10 +234,36 @@ public:
        TextureViewKey view_downscaled, float mv_scale_x, float mv_scale_y
    );
  
@@ -998,7 +999,7 @@ index 0984bed..a4f3d57 100644
  
  constexpr auto kBarrierTileSize = 16;
 diff --git a/src/nvapi/nvapi.cpp b/src/nvapi/nvapi.cpp
-index 3bf6da2..477f69a 100644
+index 445c856..7fa103c 100644
 --- a/src/nvapi/nvapi.cpp
 +++ b/src/nvapi/nvapi.cpp
 @@ -852,6 +852,41 @@ NvAPI_GPU_GetVirtualizationInfo(NvPhysicalGpuHandle hPhysicalGpu, NV_GPU_VIRTUAL
@@ -1314,10 +1315,10 @@ index 4be074e..5e799e0 100644
                                 LPVOID reserved) {
    if (reason != DLL_PROCESS_ATTACH)
 diff --git a/src/nvngx/nvngx.hpp b/src/nvngx/nvngx.hpp
-index 82bae54..36ac7de 100644
+index 8e9ea81..ee6c631 100644
 --- a/src/nvngx/nvngx.hpp
 +++ b/src/nvngx/nvngx.hpp
-@@ -5,14 +5,16 @@ struct ID3D12Resource;
+@@ -5,6 +5,8 @@ struct ID3D12Resource;
  
  #define NVNGX_API extern "C"
  
@@ -1325,12 +1326,9 @@ index 82bae54..36ac7de 100644
 +// (They were 0xbad0000-style here, which NVIDIA's NVSDK_NGX_FAILED reads as success.)
  enum NVNGX_RESULT : unsigned int {
    NVNGX_RESULT_OK = 1,
--  NVNGX_RESULT_FAIL = 0xbad0000,
--  NVNGX_RESULT_FEATURE_NOT_SUPPORTED = 0xbad0001,
--  NVNGX_RESULT_INVALID_PARAMETER = 0xbad0005,
-+  NVNGX_RESULT_FAIL = 0xBAD00000,
-+  NVNGX_RESULT_FEATURE_NOT_SUPPORTED = 0xBAD00001,
-+  NVNGX_RESULT_INVALID_PARAMETER = 0xBAD00005,
+   NVNGX_RESULT_FAIL = 0xbad00000,
+@@ -12,7 +14,7 @@ enum NVNGX_RESULT : unsigned int {
+   NVNGX_RESULT_INVALID_PARAMETER = 0xbad00005,
  };
  
 -#define NVNGX_FAILED(result) (result & NVNGX_RESULT_FAIL) == NVNGX_RESULT_FAIL
@@ -1368,7 +1366,7 @@ index 05f1fd0..3a33b70 100644
  }
 \ No newline at end of file
 diff --git a/src/nvngx/nvngx_parameter.hpp b/src/nvngx/nvngx_parameter.hpp
-index 93f06c8..fe443d5 100644
+index 5c5d2da..e5f35f2 100644
 --- a/src/nvngx/nvngx_parameter.hpp
 +++ b/src/nvngx/nvngx_parameter.hpp
 @@ -1,5 +1,6 @@
@@ -1378,7 +1376,7 @@ index 93f06c8..fe443d5 100644
  #include <unordered_map>
  #include <variant>
  #include <string>
-@@ -190,6 +191,32 @@ public:
+@@ -218,6 +219,32 @@ public:
      values_.clear();
    }
  

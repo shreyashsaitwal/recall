@@ -11,7 +11,7 @@ import shutil
 import sign_pe
 
 ROOT=Path(__file__).resolve().parents[1]
-BASE='c5dc3a0dfe9108e667da43de871324bd298c9c02'
+BASE='53ac94701fa76e6696af0926e18f913c5a2e5ffa'
 HEADERS='9df86f2341616ef1888ae59919feaa6d4fad693d'
 # NVIDIA's NVAPI headers (MIT), a submodule of the base, for DXMT's NVAPI stand-in.
 NVAPI='d08488fcc82eef313b0464db37d2955709691e94'
@@ -26,7 +26,7 @@ def prepare_source(work):
     """DXMT at its pinned commit with the accepted patches, in WORK/dxmt-source. It is all the app
     build needs (build_native_app.py --workspace WORK): its pipeline sources come from here."""
     source=work/'dxmt-source'
-    if not source.exists():run('git','clone','--no-checkout','https://github.com/NerRobDog/dxmt',source)
+    if not source.exists():run('git','clone','--no-checkout','https://github.com/shreyashsaitwal/dxmt',source)
     current=subprocess.check_output(['git','-C',str(source),'rev-parse','HEAD'],text=True).strip()
     if current!=BASE:run('git','-C',source,'checkout','--detach',BASE)
     run('git','-C',source,'submodule','update','--init','--recursive')
@@ -35,13 +35,13 @@ def prepare_source(work):
     current=subprocess.check_output(['git','-C',str(source/'external/nvapi'),'rev-parse','HEAD'],text=True).strip()
     if current!=NVAPI:raise ValueError('NVAPI header identity mismatch')
     patch=ROOT/'patches/dxmt-v1-private.patch'
-    if hashlib.sha256(patch.read_bytes()).hexdigest()!='5afcbde9512381c37e975450d08f7fd3cef1e8755739f1f5b4ae8f1563de5199':raise ValueError('Accepted renderer patch changed')
+    if hashlib.sha256(patch.read_bytes()).hexdigest()!='0d800ecb518731b1041e54b48e022c05771c075726d69101a403d80eec4ced79':raise ValueError('Accepted renderer patch changed')
     check=subprocess.run(['git','apply','--check',str(patch)],cwd=source,capture_output=True)
     if check.returncode==0:run('git','apply',patch,cwd=source)
     else:run('git','apply','--reverse','--check',patch,cwd=source)
     # v1.0: the play-tested performance work (DXMT replay branch e873a90) on top.
     performance=ROOT/'patches/dxmt-v1-performance.patch'
-    if hashlib.sha256(performance.read_bytes()).hexdigest()!='b119feb670a3e2ffe656159118e99a75abc5b9a8097e77096c512a01b81861f2':raise ValueError('Accepted performance patch changed')
+    if hashlib.sha256(performance.read_bytes()).hexdigest()!='102b9665738674907e7aeeb39e9eb659f7cec1e8e5f916a54d93e1934bd0746e':raise ValueError('Accepted performance patch changed')
     check=subprocess.run(['git','apply','--check',str(performance)],cwd=source,capture_output=True)
     if check.returncode==0:run('git','apply',performance,cwd=source)
     else:run('git','apply','--reverse','--check',performance,cwd=source)
@@ -57,7 +57,7 @@ def prepare_source(work):
     # stand-in logs what the game passes. Sharpening after MetalFX (d3d11.metalfxSharpness, Recall's
     # Sharpening setting) is a contrast-adaptive pass, also compiled at run time.
     metalfx=ROOT/'patches/dxmt-metalfx-upscaling.patch'
-    if hashlib.sha256(metalfx.read_bytes()).hexdigest()!='87ab3e3a74a1c140653d6d66cda6576049472c8999afab68bccc866e48028b17':raise ValueError('Accepted MetalFX patch changed')
+    if hashlib.sha256(metalfx.read_bytes()).hexdigest()!='8075dc2b4af2d249e5a354e7584f233c02b89b85d58c8e0d9b2e58fccb6e47dd':raise ValueError('Accepted MetalFX patch changed')
     check=subprocess.run(['git','apply','--check',str(metalfx)],cwd=source,capture_output=True)
     if check.returncode==0:run('git','apply',metalfx,cwd=source)
     else:run('git','apply','--reverse','--check',metalfx,cwd=source)
@@ -65,7 +65,7 @@ def prepare_source(work):
     # of read whole, have no total size limit, and can be prepared in batches that each add one
     # (DXMT_PIPELINE_CACHE_APPEND); learning goes on until the disk is nearly full.
     shader_pack=ROOT/'patches/dxmt-shader-pack.patch'
-    if hashlib.sha256(shader_pack.read_bytes()).hexdigest()!='26b64c19f499e4e7fbccfa9402ab0bdd5a0e383af2d5098aa00c9abcd7182773':raise ValueError('Accepted shader pack patch changed')
+    if hashlib.sha256(shader_pack.read_bytes()).hexdigest()!='22d0335c7b91ae586ed16a085a18f08d27b33cbf4b0bc090fe5552ae92f1d6d5':raise ValueError('Accepted shader pack patch changed')
     check=subprocess.run(['git','apply','--check',str(shader_pack)],cwd=source,capture_output=True)
     if check.returncode==0:run('git','apply',shader_pack,cwd=source)
     else:run('git','apply','--reverse','--check',shader_pack,cwd=source)
@@ -75,14 +75,14 @@ def prepare_source(work):
     # the Neural Engine to the GPU (DXMT_METALFX_GPU_AFTER_HANG); once macOS has revoked the game's GPU
     # access nothing can be drawn again, so the game ends (DXMT_GPU_LOST_EXIT).
     gpu_errors=ROOT/'patches/dxmt-gpu-errors.patch'
-    if hashlib.sha256(gpu_errors.read_bytes()).hexdigest()!='384d8d252ae9bf9baa0b37f9cf9d1617665b4fdbcb9d2f0801cc138694aee207':raise ValueError('Accepted GPU errors patch changed')
+    if hashlib.sha256(gpu_errors.read_bytes()).hexdigest()!='c9ce885185d1a17b16c5ae70a8ba4878a49185452be09d5f8c1400dd82a881bc':raise ValueError('Accepted GPU errors patch changed')
     check=subprocess.run(['git','apply','--check',str(gpu_errors)],cwd=source,capture_output=True)
     if check.returncode==0:run('git','apply',gpu_errors,cwd=source)
     else:run('git','apply','--reverse','--check',gpu_errors,cwd=source)
     # Stream output through a point pass-through geometry shader, which Overwatch uses for the buffer
     # behind many particle effects: every such draw was dropped and the effects flickered.
     stream_output=ROOT/'patches/dxmt-stream-output.patch'
-    if hashlib.sha256(stream_output.read_bytes()).hexdigest()!='4361f2d828b5761ea22fde36d0c02af2562f7f4a19a68e143b7ab53003f518ab':raise ValueError('Accepted stream output patch changed')
+    if hashlib.sha256(stream_output.read_bytes()).hexdigest()!='b2478adc746e71c42e785c5652afbe6b27191dd7e17082f8280bedc21b18fbf8':raise ValueError('Accepted stream output patch changed')
     check=subprocess.run(['git','apply','--check',str(stream_output)],cwd=source,capture_output=True)
     if check.returncode==0:run('git','apply',stream_output,cwd=source)
     else:run('git','apply','--reverse','--check',stream_output,cwd=source)

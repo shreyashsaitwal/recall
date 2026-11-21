@@ -1,5 +1,5 @@
 diff --git a/dxmt.conf b/dxmt.conf
-index 2145a9e..1a4c638 100644
+index 6a93b70..67c6158 100644
 --- a/dxmt.conf
 +++ b/dxmt.conf
 @@ -35,6 +35,15 @@
@@ -33,193 +33,8 @@ index 2145a9e..1a4c638 100644
  # Sanitize NaN sample coordinates to zero. This is an UB anyway, just less broken.
  #
  # Supported values: True, False
-diff --git a/src/airconv/dxbc_converter.cpp b/src/airconv/dxbc_converter.cpp
-index 02b3a4c..4b1387b 100644
---- a/src/airconv/dxbc_converter.cpp
-+++ b/src/airconv/dxbc_converter.cpp
-@@ -992,19 +992,19 @@ AIRCONV_API int SM50Initialize(
-   if (ppError) {
-     *ppError = nullptr;
-   }
--  auto errorObj = new SM50ErrorInternal();
-+  auto errorObj = std::make_unique<SM50ErrorInternal>();
-   llvm::raw_svector_ostream errorOut(errorObj->buf);
- 
-   if (ppShader == nullptr) {
-     errorOut << "ppShader can not be null\0";
--    *ppError = (sm50_error_t)errorObj;
-+    *ppError = (sm50_error_t)errorObj.release();
-     return 1;
-   }
- 
-   CDXBCParser DXBCParser;
-   if (DXBCParser.ReadDXBC(pBytecode, BytecodeSize) != S_OK) {
-     errorOut << "Invalid DXBC bytecode\0";
--    *ppError = (sm50_error_t)errorObj;
-+    *ppError = (sm50_error_t)errorObj.release();
-     return 1;
-   }
- 
-@@ -1014,7 +1014,7 @@ AIRCONV_API int SM50Initialize(
-   }
-   if (codeBlobIdx == DXBC_BLOB_NOT_FOUND) {
-     errorOut << "Invalid DXBC bytecode: shader blob not found\0";
--    *ppError = (sm50_error_t)errorObj;
-+    *ppError = (sm50_error_t)errorObj.release();
-     return 1;
-   }
-   const void *codeBlob = DXBCParser.GetBlob(codeBlobIdx);
-@@ -1025,13 +1025,13 @@ AIRCONV_API int SM50Initialize(
-   CSignatureParser inputParser;
-   if (DXBCGetInputSignature(pBytecode, &inputParser) != S_OK) {
-     errorOut << "Invalid DXBC bytecode: input signature not found\0";
--    *ppError = (sm50_error_t)errorObj;
-+    *ppError = (sm50_error_t)errorObj.release();
-     return 1;
-   }
-   CSignatureParser5 outputParser;
-   if (DXBCGetOutputSignature(pBytecode, &outputParser) != S_OK) {
-     errorOut << "Invalid DXBC bytecode: output signature not found\0";
--    *ppError = (sm50_error_t)errorObj;
-+    *ppError = (sm50_error_t)errorObj.release();
-     return 1;
-   }
- 
-@@ -1252,7 +1252,7 @@ AIRCONV_API int SM50Initialize(
-       auto threads_per_patch = next_pow2(sm50_shader->hull_maximum_threads_per_patch);
-       if (threads_per_patch > 32) {
-         errorOut << "Threadgroup size of tessellation pipeline is too large.";
--        *ppError = (sm50_error_t)errorObj;
-+        *ppError = (sm50_error_t)errorObj.release();
-         return 1;
-       }
-       auto patch_per_group = 32 / threads_per_patch;
-@@ -1264,7 +1264,7 @@ AIRCONV_API int SM50Initialize(
-             max_tesselation_factor = std::max(max_tesselation_factor - 2.0f, 1.0f);
-           } else {
-             errorOut << "Payload size of tessellation pipeline is too large.";
--            *ppError = (sm50_error_t)errorObj;
-+            *ppError = (sm50_error_t)errorObj.release();
-             return 1;
-           }
-         } else {
-@@ -1350,11 +1350,11 @@ AIRCONV_API int SM50Compile(
-   if (ppError) {
-     *ppError = nullptr;
-   }
--  auto errorObj = new SM50ErrorInternal();
-+  auto errorObj = std::make_unique<SM50ErrorInternal>();
-   llvm::raw_svector_ostream errorOut(errorObj->buf);
-   if (ppBitcode == nullptr) {
-     errorOut << "ppBitcode can not be null\0";
--    *ppError = (sm50_error_t)errorObj;
-+    *ppError = (sm50_error_t)errorObj.release();
-     return 1;
-   }
- 
-@@ -1374,7 +1374,7 @@ AIRCONV_API int SM50Compile(
-     llvm::handleAllErrors(std::move(err), [&](const UnsupportedFeature &u) {
-       errorOut << u.msg;
-     });
--    *ppError = (sm50_error_t)errorObj;
-+    *ppError = (sm50_error_t)errorObj.release();
-     return 1;
-   }
- 
-@@ -1411,11 +1411,11 @@ AIRCONV_API int SM50CompileTessellationPipelineHull(
-   if (ppError) {
-     *ppError = nullptr;
-   }
--  auto errorObj = new SM50ErrorInternal();
-+  auto errorObj = std::make_unique<SM50ErrorInternal>();
-   llvm::raw_svector_ostream errorOut(errorObj->buf);
-   if (ppBitcode == nullptr) {
-     errorOut << "ppBitcode can not be null\0";
--    *ppError = (sm50_error_t)errorObj;
-+    *ppError = (sm50_error_t)errorObj.release();
-     return 1;
-   }
- 
-@@ -1437,7 +1437,7 @@ AIRCONV_API int SM50CompileTessellationPipelineHull(
-     llvm::handleAllErrors(std::move(err), [&](const UnsupportedFeature &u) {
-       errorOut << u.msg;
-     });
--    *ppError = (sm50_error_t)errorObj;
-+    *ppError = (sm50_error_t)errorObj.release();
-     return 1;
-   }
- 
-@@ -1475,11 +1475,11 @@ AIRCONV_API int SM50CompileTessellationPipelineDomain(
-   if (ppError) {
-     *ppError = nullptr;
-   }
--  auto errorObj = new SM50ErrorInternal();
-+  auto errorObj = std::make_unique<SM50ErrorInternal>();
-   llvm::raw_svector_ostream errorOut(errorObj->buf);
-   if (ppBitcode == nullptr) {
-     errorOut << "ppBitcode can not be null\0";
--    *ppError = (sm50_error_t)errorObj;
-+    *ppError = (sm50_error_t)errorObj.release();
-     return 1;
-   }
- 
-@@ -1502,7 +1502,7 @@ AIRCONV_API int SM50CompileTessellationPipelineDomain(
-     llvm::handleAllErrors(std::move(err), [&](const UnsupportedFeature &u) {
-       errorOut << u.msg;
-     });
--    *ppError = (sm50_error_t)errorObj;
-+    *ppError = (sm50_error_t)errorObj.release();
-     return 1;
-   }
- 
-@@ -1540,11 +1540,11 @@ AIRCONV_API int SM50CompileGeometryPipelineVertex(
-   if (ppError) {
-     *ppError = nullptr;
-   }
--  auto errorObj = new SM50ErrorInternal();
-+  auto errorObj = std::make_unique<SM50ErrorInternal>();
-   llvm::raw_svector_ostream errorOut(errorObj->buf);
-   if (ppBitcode == nullptr) {
-     errorOut << "ppBitcode can not be null\0";
--    *ppError = (sm50_error_t)errorObj;
-+    *ppError = (sm50_error_t)errorObj.release();
-     return 1;
-   }
- 
-@@ -1566,7 +1566,7 @@ AIRCONV_API int SM50CompileGeometryPipelineVertex(
-     llvm::handleAllErrors(std::move(err), [&](const UnsupportedFeature &u) {
-       errorOut << u.msg;
-     });
--    *ppError = (sm50_error_t)errorObj;
-+    *ppError = (sm50_error_t)errorObj.release();
-     return 1;
-   }
- 
-@@ -1603,11 +1603,11 @@ AIRCONV_API int SM50CompileGeometryPipelineGeometry(
-   if (ppError) {
-     *ppError = nullptr;
-   }
--  auto errorObj = new SM50ErrorInternal();
-+  auto errorObj = std::make_unique<SM50ErrorInternal>();
-   llvm::raw_svector_ostream errorOut(errorObj->buf);
-   if (ppBitcode == nullptr) {
-     errorOut << "ppBitcode can not be null\0";
--    *ppError = (sm50_error_t)errorObj;
-+    *ppError = (sm50_error_t)errorObj.release();
-     return 1;
-   }
- 
-@@ -1630,7 +1630,7 @@ AIRCONV_API int SM50CompileGeometryPipelineGeometry(
-     llvm::handleAllErrors(std::move(err), [&](const UnsupportedFeature &u) {
-       errorOut << u.msg;
-     });
--    *ppError = (sm50_error_t)errorObj;
-+    *ppError = (sm50_error_t)errorObj.release();
-     return 1;
-   }
- 
 diff --git a/src/d3d11/d3d11_context_def.cpp b/src/d3d11/d3d11_context_def.cpp
-index 554912d..fff49fa 100644
+index a49dd16..55bf5c0 100644
 --- a/src/d3d11/d3d11_context_def.cpp
 +++ b/src/d3d11/d3d11_context_def.cpp
 @@ -1,3 +1,5 @@
@@ -236,7 +51,7 @@ index 554912d..fff49fa 100644
    return ctx_state.current_cmdlist->AllocateStagingBuffer(size, alignment);
  }
  
-@@ -147,9 +150,12 @@ public:
+@@ -147,11 +150,14 @@ public:
    STDMETHODCALLTYPE
    Map(ID3D11Resource *pResource, UINT Subresource, D3D11_MAP MapType, UINT MapFlags,
        D3D11_MAPPED_SUBRESOURCE *pMappedResource) override {
@@ -244,12 +59,14 @@ index 554912d..fff49fa 100644
 +      uint64_t(MapType) | (uint64_t(MapFlags) << 32));
      UINT buffer_length = 0, &row_pitch = buffer_length;
      UINT bind_flag = 0, &depth_pitch = bind_flag;
+     if (unlikely(!pResource))
+       return E_INVALIDARG;
      if (auto dynamic = GetDynamicBuffer(pResource, &buffer_length, &bind_flag)) {
 +      resource_trace.bytes(buffer_length);
        if (!pMappedResource)
          return E_INVALIDARG;
        switch (MapType) {
-@@ -190,6 +196,7 @@ public:
+@@ -192,6 +198,7 @@ public:
          break;
        }
        }
@@ -257,7 +74,7 @@ index 554912d..fff49fa 100644
        return S_OK;
      }
      if (auto dynamic = GetDynamicLinearTexture(pResource, &row_pitch, &depth_pitch)) {
-@@ -239,6 +246,7 @@ public:
+@@ -241,6 +248,7 @@ public:
          break;
        }
        }
@@ -265,15 +82,15 @@ index 554912d..fff49fa 100644
        return S_OK;
      }
      if (auto dynamic = GetDynamicTexture(pResource, Subresource, &row_pitch, &depth_pitch)) {
-@@ -260,6 +268,7 @@ public:
+@@ -262,6 +270,7 @@ public:
          break;
        }
        }
 +      map_use_.begin(pResource, Subresource, MapType);
        return S_OK;
      }
-     return E_FAIL;
-@@ -268,6 +277,8 @@ public:
+     if (pMappedResource == nullptr) {
+@@ -273,6 +282,8 @@ public:
    void
    STDMETHODCALLTYPE
    Unmap(ID3D11Resource *pResource, UINT Subresource) override {
@@ -281,8 +98,8 @@ index 554912d..fff49fa 100644
 +    ResourceScope resource_trace(ResourceTelemetry::UnmapDeferred, pResource, ResourceTelemetry::UnknownBytes, Subresource);
      UINT buffer_length = 0, &row_pitch = buffer_length;
      UINT bind_flag = 0, &depth_pitch = bind_flag;
-     if (auto dynamic = GetDynamicTexture(pResource, Subresource, &row_pitch, &depth_pitch)) {
-@@ -466,6 +477,7 @@ public:
+     if (unlikely(!pResource))
+@@ -478,6 +489,7 @@ public:
    }
  
  private:
@@ -291,16 +108,16 @@ index 554912d..fff49fa 100644
    null_mutex mutex;
    std::atomic<uint32_t> refcount = 0;
 diff --git a/src/d3d11/d3d11_context_imm.cpp b/src/d3d11/d3d11_context_imm.cpp
-index 17c049c..aa671c3 100644
+index 90e0703..1e9233f 100644
 --- a/src/d3d11/d3d11_context_imm.cpp
 +++ b/src/d3d11/d3d11_context_imm.cpp
 @@ -1,3 +1,5 @@
 +#include "dxmt_map_use.hpp"
 +#include "dxmt_resource_log.hpp"
  #include "config/config.hpp"
+ #include "d3d11_context_state.hpp"
  #include "d3d11_fence.hpp"
- #include "d3d11_private.h"
-@@ -49,6 +51,7 @@ ImmediateContextBase::AllocateCommandData(size_t n) {
+@@ -50,6 +52,7 @@ ImmediateContextBase::AllocateCommandData(size_t n) {
  template <>
  std::tuple<WMT::Buffer, uint64_t>
  ImmediateContextBase::AllocateStagingBuffer(size_t size, size_t alignment) {
@@ -308,7 +125,7 @@ index 17c049c..aa671c3 100644
    return ctx_state.cmd_queue.AllocateStagingBuffer(size, alignment);
  }
  
-@@ -137,6 +140,8 @@ public:
+@@ -143,6 +146,8 @@ public:
    STDMETHODCALLTYPE
    Map(ID3D11Resource *pResource, UINT Subresource, D3D11_MAP MapType, UINT MapFlags,
        D3D11_MAPPED_SUBRESOURCE *pMappedResource) override {
@@ -316,16 +133,16 @@ index 17c049c..aa671c3 100644
 +      uint64_t(MapType) | (uint64_t(MapFlags) << 32));
      std::lock_guard<d3d11_device_mutex> lock(mutex);
  
-     if (unlikely(!pResource || !pMappedResource))
-@@ -146,6 +151,7 @@ public:
-     auto current_seq_id = cmd_queue.CurrentSeqId();
-     auto coherent_seq_id = cmd_queue.CoherentSeqId();
+     if (unlikely(!pResource))
+@@ -154,6 +159,7 @@ public:
      if (auto dynamic = GetDynamicBuffer(pResource, &buffer_length, &bind_flag)) {
+       if (!pMappedResource)
+         return E_INVALIDARG;
 +      resource_trace.bytes(buffer_length);
        switch (MapType) {
        case D3D11_MAP_READ:
        case D3D11_MAP_WRITE:
-@@ -178,6 +184,7 @@ public:
+@@ -186,6 +192,7 @@ public:
          break;
        }
        }
@@ -333,7 +150,7 @@ index 17c049c..aa671c3 100644
        return S_OK;
      }
      if (auto dynamic = GetDynamicTexture(pResource, Subresource, &row_pitch, &depth_pitch)) {
-@@ -198,6 +205,7 @@ public:
+@@ -208,6 +215,7 @@ public:
          break;
        }
        }
@@ -341,7 +158,7 @@ index 17c049c..aa671c3 100644
        return S_OK;
      }
      if (auto dynamic = GetDynamicLinearTexture(pResource, &row_pitch, &depth_pitch)) {
-@@ -229,9 +237,11 @@ public:
+@@ -241,12 +249,13 @@ public:
          break;
        }
        }
@@ -349,11 +166,14 @@ index 17c049c..aa671c3 100644
        return S_OK;
      }
      if (auto staging = GetStagingResource(pResource, Subresource)) {
+       if (!pMappedResource)
+         return E_INVALIDARG;
+-
 +      resource_trace.bytes(staging->length);
        if (MapType > 3 || MapType == 0)
-           return E_INVALIDARG;
+         return E_INVALIDARG;
  
-@@ -246,7 +256,10 @@ public:
+@@ -261,7 +270,10 @@ public:
            // when write to a buffer that is gpu-readonly
            auto next_name = staging->allocate(coherent_seq_id);
            // can't guarantee a full overwrite
@@ -365,7 +185,7 @@ index 17c049c..aa671c3 100644
            staging->updateImmediateName(current_seq_id, next_name);
            EmitST([staging, next_name](ArgumentEncodingContext &enc) mutable { 
              auto _ = staging->buffer()->rename(staging->allocation(next_name));
-@@ -258,7 +271,8 @@ public:
+@@ -273,7 +285,8 @@ public:
            pMappedResource->pData = staging->mappedImmediateMemory();
            pMappedResource->RowPitch = staging->bytesPerRow;
            pMappedResource->DepthPitch = staging->bytesPerImage;
@@ -375,7 +195,7 @@ index 17c049c..aa671c3 100644
          }
          if (MapFlags & D3D11_MAP_FLAG_DO_NOT_WAIT) {
            return DXGI_ERROR_WAS_STILL_DRAWING;
-@@ -287,6 +301,8 @@ public:
+@@ -302,6 +315,8 @@ public:
    void
    STDMETHODCALLTYPE
    Unmap(ID3D11Resource *pResource, UINT Subresource) override {
@@ -384,7 +204,7 @@ index 17c049c..aa671c3 100644
      std::lock_guard<d3d11_device_mutex> lock(mutex);
  
      if (unlikely(!pResource))
-@@ -657,6 +673,7 @@ public:
+@@ -701,6 +716,7 @@ public:
    }
  
  private:
@@ -393,7 +213,7 @@ index 17c049c..aa671c3 100644
    CommandQueue &cmd_queue;
    ContextInternalState ctx_state;
 diff --git a/src/d3d11/d3d11_context_impl.cpp b/src/d3d11/d3d11_context_impl.cpp
-index a1902a9..29d2626 100644
+index d2ef5d4..780b6bb 100644
 --- a/src/d3d11/d3d11_context_impl.cpp
 +++ b/src/d3d11/d3d11_context_impl.cpp
 @@ -20,6 +20,7 @@
@@ -404,7 +224,7 @@ index a1902a9..29d2626 100644
  #include "Metal.hpp"
  #include "d3d11_annotation.hpp"
  #include "d3d11_context.hpp"
-@@ -1172,6 +1173,7 @@ public:
+@@ -1196,6 +1197,7 @@ public:
        ID3D11Resource *pDstResource, UINT DstSubresource, const D3D11_BOX *pDstBox, const void *pSrcData,
        UINT SrcRowPitch, UINT SrcDepthPitch, UINT CopyFlags
    ) override {
@@ -412,7 +232,7 @@ index a1902a9..29d2626 100644
      std::lock_guard<mutex_t> lock(mutex);
  
      if (!pDstResource)
-@@ -1191,6 +1193,7 @@ public:
+@@ -1215,6 +1217,7 @@ public:
          copy_offset = pDstBox->left;
          copy_len = pDstBox->right - copy_offset;
        }
@@ -420,7 +240,7 @@ index a1902a9..29d2626 100644
        UINT buffer_len = 0;
        UINT unused_bind_flag = 0;
        if (auto dynamic = GetDynamicBuffer(pDstResource, &buffer_len, &unused_bind_flag)) {
-@@ -1218,7 +1221,10 @@ public:
+@@ -1242,7 +1245,10 @@ public:
          UNIMPLEMENTED("update buffer: staging");
        } else if (auto bindable = GetResourceCommon(pDstResource)) {
          auto [staging_buffer, offset] = AllocateStagingBuffer(copy_len, 16);
@@ -432,7 +252,7 @@ index a1902a9..29d2626 100644
          SwitchToBlitEncoder(CommandBufferState::UpdateBlitEncoderActive);
          EmitOP([staging_buffer, offset, dst = bindable->buffer(), copy_offset, copy_len](ArgumentEncodingContext &enc) {
            auto [dst_buffer, dst_offset] = enc.access(dst, copy_offset, copy_len, ResourceAccess::Write);
-@@ -4187,12 +4193,14 @@ public:
+@@ -4205,12 +4211,14 @@ public:
    UpdateTexture(
        TextureUpdateCommand &&cmd, const void *pSrcData, UINT SrcRowPitch, UINT SrcDepthPitch, UINT CopyFlags
    ) {
@@ -447,7 +267,7 @@ index a1902a9..29d2626 100644
        auto bytes_per_depth_slice = cmd.EffectiveRows * cmd.EffectiveBytesPerRow;
        auto [staging_buffer, offset] = AllocateStagingBuffer(bytes_per_depth_slice * cmd.DstSize.depth, 16);
        if (cmd.EffectiveBytesPerRow == SrcRowPitch) {
-@@ -4238,6 +4246,7 @@ public:
+@@ -4256,6 +4264,7 @@ public:
    UpdateTexture(
        TextureUpdateCommand &&cmd, Rc<Buffer> &&src, UINT SrcRowPitch, UINT SrcDepthPitch
    ) {
@@ -456,7 +276,7 @@ index a1902a9..29d2626 100644
        return;
  
 diff --git a/src/d3d11/d3d11_device.cpp b/src/d3d11/d3d11_device.cpp
-index a21b3c5..7cf82b7 100644
+index 15118d9..f9a3de6 100644
 --- a/src/d3d11/d3d11_device.cpp
 +++ b/src/d3d11/d3d11_device.cpp
 @@ -1,3 +1,4 @@
@@ -481,7 +301,7 @@ index a21b3c5..7cf82b7 100644
  
      InitReturnPtr(ppTexture1D);
  
-@@ -832,6 +836,7 @@ public:
+@@ -838,6 +842,7 @@ public:
    CreateTexture2D1(const D3D11_TEXTURE2D_DESC1 *pDesc,
                     const D3D11_SUBRESOURCE_DATA *pInitialData,
                     ID3D11Texture2D1 **ppTexture2D) override {
@@ -489,7 +309,7 @@ index a21b3c5..7cf82b7 100644
      InitReturnPtr(ppTexture2D);
  
      if (!pDesc)
-@@ -868,6 +873,7 @@ public:
+@@ -874,6 +879,7 @@ public:
    CreateTexture3D1(const D3D11_TEXTURE3D_DESC1 *pDesc,
                     const D3D11_SUBRESOURCE_DATA *pInitialData,
                     ID3D11Texture3D1 **ppTexture3D) override {
@@ -497,7 +317,7 @@ index a21b3c5..7cf82b7 100644
      InitReturnPtr(ppTexture3D);
  
      if (!pDesc)
-@@ -1255,6 +1261,7 @@ public:
+@@ -1266,6 +1272,7 @@ public:
    }
  
    HRESULT STDMETHODCALLTYPE SetMaximumFrameLatency(UINT MaxLatency) override {
@@ -642,7 +462,7 @@ index 1a9c4f4..03d6650 100644
 \ No newline at end of file
 +}; // namespace dxmt
 diff --git a/src/d3d11/d3d11_pipeline_cache.cpp b/src/d3d11/d3d11_pipeline_cache.cpp
-index 9444191..fe4299f 100644
+index c04968a..fb75e4f 100644
 --- a/src/d3d11/d3d11_pipeline_cache.cpp
 +++ b/src/d3d11/d3d11_pipeline_cache.cpp
 @@ -10,6 +10,7 @@
@@ -650,10 +470,10 @@ index 9444191..fe4299f 100644
  #include "../d3d10/d3d10_shader.hpp"
  #include "../d3d10/d3d10_input_layout.hpp"
 +#include <algorithm>
+ #include <atomic>
  #include <cstring>
  #include <shared_mutex>
- 
-@@ -60,6 +61,11 @@ private:
+@@ -61,6 +62,11 @@ private:
  
  template <> struct task_trait<ThreadpoolWork *> {
    ThreadpoolWork *run_task(ThreadpoolWork *task) {
@@ -665,7 +485,7 @@ index 9444191..fe4299f 100644
      return task->RunThreadpoolWork();
    }
    bool get_done(ThreadpoolWork *task) { return task->GetIsDone(); }
-@@ -108,10 +114,10 @@ class PipelineCache : public MTLD3D11PipelineCacheBase {
+@@ -109,10 +115,10 @@ class PipelineCache : public MTLD3D11PipelineCacheBase {
      ~CachedSM50Shader() {
        if (shader) {
          SM50Destroy(shader);
@@ -678,7 +498,7 @@ index 9444191..fe4299f 100644
        if (dxbc_) {
          free(dxbc_);
          dxbc_ = nullptr;
-@@ -164,7 +170,7 @@ class PipelineCache : public MTLD3D11PipelineCacheBase {
+@@ -165,7 +171,7 @@ class PipelineCache : public MTLD3D11PipelineCacheBase {
            ERR("Failed to rematerialize shader IR: ",
                SM50GetErrorMessageString(err));
            SM50FreeError(err);
@@ -687,7 +507,7 @@ index 9444191..fe4299f 100644
          }
          shader = sm50;
          ir_released_ = false;
-@@ -263,8 +269,6 @@ class PipelineCache : public MTLD3D11PipelineCacheBase {
+@@ -264,8 +270,6 @@ class PipelineCache : public MTLD3D11PipelineCacheBase {
    bool release_ir_ =
        Config::getInstance().getOption<bool>("d3d11.releaseShaderIR", true);
  
@@ -696,7 +516,7 @@ index 9444191..fe4299f 100644
    MTLD3D11Device *device;
    StateObjectCache<D3D11_BLEND_DESC1, IMTLD3D11BlendState> blend_states;
  
-@@ -290,6 +294,9 @@ class PipelineCache : public MTLD3D11PipelineCacheBase {
+@@ -291,6 +295,9 @@ class PipelineCache : public MTLD3D11PipelineCacheBase {
    std::unordered_map<ManagedShader, std::unique_ptr<MTLCompiledComputePipeline>> pipelines_cs_;
    dxmt::mutex mutex_cs_;
  
@@ -706,7 +526,7 @@ index 9444191..fe4299f 100644
    CachedSM50Shader *CreateShader(const void *pBytecode,
                                   uint32_t BytecodeLength) {
      auto sha1 = Sha1HashState::compute(pBytecode, BytecodeLength);
-@@ -529,7 +536,11 @@ public:
+@@ -530,7 +537,11 @@ public:
        scache_(ShaderCache::getInstance(pDevice->GetDXMTDevice().metalVersion())),
        device(pDevice),
        blend_states(pDevice),
@@ -719,7 +539,7 @@ index 9444191..fe4299f 100644
  };
  
  std::unique_ptr<MTLD3D11PipelineCacheBase>
-@@ -537,4 +548,4 @@ InitializePipelineCache(MTLD3D11Device *device) {
+@@ -538,4 +549,4 @@ InitializePipelineCache(MTLD3D11Device *device) {
    return std::make_unique<PipelineCache>(device);
  }
  
@@ -853,10 +673,10 @@ index 0000000..e2341ca
 +
 +} // namespace dxmt
 diff --git a/src/d3d11/d3d11_pipeline_ts.cpp b/src/d3d11/d3d11_pipeline_ts.cpp
-index 23d1f00..25c094f 100644
+index 8b7f1f3..69041bc 100644
 --- a/src/d3d11/d3d11_pipeline_ts.cpp
 +++ b/src/d3d11/d3d11_pipeline_ts.cpp
-@@ -83,7 +83,8 @@ public:
+@@ -91,7 +91,8 @@ public:
    }
  
    void GetPipeline(MTL_COMPILED_TESSELLATION_MESH_PIPELINE *pPipeline) final {
@@ -866,7 +686,7 @@ index 23d1f00..25c094f 100644
      *pPipeline = {state_rasterization_, hull_reflection.NumOutputElement,
                    hull_reflection.ThreadsPerPatch};
    }
-@@ -164,9 +165,14 @@ public:
+@@ -172,9 +173,14 @@ public:
      info.object_tgsize_is_multiple_of_sgwidth = true;
  
      {
@@ -884,7 +704,7 @@ index 23d1f00..25c094f 100644
      }
      if (state_rasterization_ == nullptr) {
        ERR("Failed to create tessellation raster PSO: ",
-@@ -176,11 +182,13 @@ public:
+@@ -184,11 +190,13 @@ public:
      return this;
    }
  
@@ -901,7 +721,7 @@ index 23d1f00..25c094f 100644
    }
  
  private:
-@@ -189,7 +197,7 @@ private:
+@@ -197,7 +205,7 @@ private:
    WMTPixelFormat rtv_formats[8];
    WMTPixelFormat depth_stencil_format;
    MTLD3D11Device *device_;
@@ -910,7 +730,7 @@ index 23d1f00..25c094f 100644
    IMTLD3D11BlendState *pBlendState;
    WMT::Reference<WMT::RenderPipelineState> state_rasterization_;
    bool RasterizationEnabled;
-@@ -200,6 +208,7 @@ private:
+@@ -208,6 +216,7 @@ private:
    CompiledShader *VertexHullShader;
    CompiledShader *PixelShader;
    CompiledShader *DomainShader;
@@ -918,7 +738,7 @@ index 23d1f00..25c094f 100644
  };
  
  std::unique_ptr<MTLCompiledTessellationMeshPipeline>
-@@ -208,4 +217,4 @@ CreateTessellationMeshPipeline(MTLD3D11Device *pDevice,
+@@ -216,4 +225,4 @@ CreateTessellationMeshPipeline(MTLD3D11Device *pDevice,
    return std::make_unique<MTLCompiledTessellationPipelineImpl>(pDevice, pDesc);
  }
  
@@ -926,7 +746,7 @@ index 23d1f00..25c094f 100644
 \ No newline at end of file
 +} // namespace dxmt
 diff --git a/src/d3d11/d3d11_shader.cpp b/src/d3d11/d3d11_shader.cpp
-index a68f7c8..1c121c7 100644
+index a334566..4b6e6ea 100644
 --- a/src/d3d11/d3d11_shader.cpp
 +++ b/src/d3d11/d3d11_shader.cpp
 @@ -3,6 +3,7 @@
@@ -937,7 +757,7 @@ index a68f7c8..1c121c7 100644
  #include "dxmt_statistics.hpp"
  #include "sha1/sha1_util.hpp"
  #include <mutex>
-@@ -30,7 +31,7 @@ public:
+@@ -31,7 +32,7 @@ public:
                             Proc &&proc, std::string func_name, const Sha1Digest& variant_digest,
                             std::vector<ManagedShader> extra_ir_holders = {})
        : CompiledShader(), proc(std::forward<Proc>(proc)), func_name(func_name), device_(pDevice),
@@ -946,7 +766,7 @@ index a68f7c8..1c121c7 100644
      sm50_common.type = SM50_SHADER_COMMON;
      sm50_common.metal_version = (SM50_SHADER_METAL_VERSION)pDevice->GetDXMTDevice().metalVersion();
      sm50_common.flags = getGlobalShaderFlag();
-@@ -54,65 +55,116 @@ public:
+@@ -55,65 +56,116 @@ public:
  
    ThreadpoolWork *
    RunThreadpoolWork() {
@@ -1071,7 +891,7 @@ index a68f7c8..1c121c7 100644
        }
      }
  
-@@ -133,6 +185,7 @@ private:
+@@ -134,6 +186,7 @@ private:
    std::atomic_bool ready_;
    WMT::Reference<WMT::Function> function_;
    std::vector<ManagedShader> ir_holders_;
@@ -1079,7 +899,7 @@ index a68f7c8..1c121c7 100644
  };
  
  template <>
-@@ -464,4 +517,4 @@ CreateVariantShader(MTLD3D11Device *pDevice, ManagedShader shader,
+@@ -466,4 +519,4 @@ CreateVariantShader(MTLD3D11Device *pDevice, ManagedShader shader,
        std::vector<ManagedShader>{variant.vertex_shader_handle});
  }
  
@@ -1541,7 +1361,7 @@ index 0000000..1c3c30e
 +
 +} // namespace dxmt
 diff --git a/src/d3d11/d3d11_swapchain.cpp b/src/d3d11/d3d11_swapchain.cpp
-index 5e9404d..60bb94d 100644
+index 53559c8..2cf4f76 100644
 --- a/src/d3d11/d3d11_swapchain.cpp
 +++ b/src/d3d11/d3d11_swapchain.cpp
 @@ -1,3 +1,4 @@
@@ -1549,7 +1369,7 @@ index 5e9404d..60bb94d 100644
  #include "d3d11_swapchain.hpp"
  #include "com/com_guid.hpp"
  #include "config/config.hpp"
-@@ -23,8 +24,11 @@
+@@ -24,8 +25,11 @@
  #include "dxmt_info.hpp"
  #include "dxmt_presenter.hpp"
  #include <atomic>
@@ -1561,7 +1381,7 @@ index 5e9404d..60bb94d 100644
  
  /**
  Ref: https://learn.microsoft.com/en-us/windows/win32/api/dxgi1_3/nf-dxgi1_3-idxgiswapchain2-setmaximumframelatency
-@@ -34,6 +38,8 @@ constexpr size_t kSwapchainLatency = 1;
+@@ -35,6 +39,8 @@ constexpr size_t kSwapchainLatency = 1;
  
  namespace dxmt {
  
@@ -1570,7 +1390,7 @@ index 5e9404d..60bb94d 100644
  WMTPixelFormat ConvertSwapChainFormat(DXGI_FORMAT format) {
    switch (format) {
    case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
-@@ -131,12 +137,25 @@ public:
+@@ -132,12 +138,25 @@ public:
        monitor_(wsi::getWindowMonitor(hWnd)),
        hud(WMT::DeveloperHUDProperties::instance()) {
  
@@ -1596,7 +1416,7 @@ index 5e9404d..60bb94d 100644
  
      if constexpr (EnableMetalFX) {
        scale_factor = std::max(Config::getInstance().getOption<float>("d3d11.metalSpatialUpscaleFactor", 2), 1.0f);
-@@ -202,15 +221,68 @@ public:
+@@ -203,15 +222,68 @@ public:
      ResizeBuffers(0, desc_.Width, desc_.Height, DXGI_FORMAT_UNKNOWN, desc_.Flags);
      if (!fullscreen_desc_.Windowed)
        EnterFullscreenMode(nullptr);
@@ -1665,7 +1485,7 @@ index 5e9404d..60bb94d 100644
    HRESULT
    STDMETHODCALLTYPE
    QueryInterface(REFIID riid, void **ppvObject) final {
-@@ -304,6 +376,19 @@ public:
+@@ -307,6 +379,19 @@ public:
  
      std::unique_lock<dxmt::mutex> lock(mutex_);
  
@@ -1685,7 +1505,7 @@ index 5e9404d..60bb94d 100644
      DXGI_MODE_DESC1 preferred_display_mode = {
          desc_.Width,
          desc_.Height,
-@@ -347,6 +432,17 @@ public:
+@@ -350,6 +435,17 @@ public:
  
      std::lock_guard<dxmt::mutex> lock(mutex_);
  
@@ -1703,7 +1523,7 @@ index 5e9404d..60bb94d 100644
      if (FAILED(RestoreDisplayMode(monitor_)))
        WARN("DXGI: LeaveFullscreenMode: Failed to restore display mode");
  
-@@ -438,6 +534,12 @@ public:
+@@ -441,6 +537,12 @@ public:
    GetFullscreenState(BOOL *pFullscreen, IDXGIOutput **ppTarget) final {
      HRESULT hr = S_OK;
  
@@ -1716,7 +1536,7 @@ index 5e9404d..60bb94d 100644
      if (handle_alt_tab_ && !fullscreen_desc_.Windowed && !wsi::isForeground(hWnd))
        SetFullscreenState(FALSE, nullptr);
  
-@@ -476,6 +578,7 @@ public:
+@@ -480,6 +582,7 @@ public:
    STDMETHODCALLTYPE
    ResizeBuffers(UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT Format,
                  UINT flags) final {
@@ -1724,7 +1544,7 @@ index 5e9404d..60bb94d 100644
      /* BufferCount ignored */
      if (Width == 0 || Height == 0) {
        wsi::getWindowSize(hWnd, &desc_.Width, &desc_.Height);
-@@ -483,6 +586,8 @@ public:
+@@ -487,6 +590,8 @@ public:
        desc_.Width = Width;
        desc_.Height = Height;
      }
@@ -1733,7 +1553,7 @@ index 5e9404d..60bb94d 100644
      if (Format != DXGI_FORMAT_UNKNOWN) {
        if (ConvertSwapChainFormat(Format) != WMTPixelFormatInvalid)
          desc_.Format = Format;
-@@ -505,7 +610,10 @@ public:
+@@ -509,7 +614,10 @@ public:
      if (FAILED(dxmt::CreateDeviceTexture2D(
              device_, &backbuffer_desc_, nullptr, reinterpret_cast<ID3D11Texture2D1 **>(&backbuffer_)
          )))
@@ -1744,7 +1564,7 @@ index 5e9404d..60bb94d 100644
      // CreateDeviceTexture2D returns public reference, change to private one here
      backbuffer_->AddRefPrivate();
      backbuffer_->Release();
-@@ -518,7 +626,10 @@ public:
+@@ -522,7 +630,10 @@ public:
        if (FAILED(dxmt::CreateDeviceTexture2D(
                device_, &upscaled_desc_, nullptr, reinterpret_cast<ID3D11Texture2D1 **>(&upscaled_backbuffer_)
            )))
@@ -1755,7 +1575,7 @@ index 5e9404d..60bb94d 100644
  
        WMTFXSpatialScalerInfo info;
        info.input_height = desc_.Height;
-@@ -531,6 +642,8 @@ public:
+@@ -535,6 +646,8 @@ public:
        D3D11_ASSERT(metalfx_scaler && "otherwise metalfx failed to initialize");
      }
  
@@ -1764,7 +1584,7 @@ index 5e9404d..60bb94d 100644
      return S_OK;
    };
  
-@@ -543,6 +656,8 @@ public:
+@@ -548,6 +661,8 @@ public:
      if (!wsi::isWindow(hWnd))
        return DXGI_ERROR_INVALID_CALL;
  
@@ -1773,8 +1593,8 @@ index 5e9404d..60bb94d 100644
      std::unique_lock<dxmt::mutex> lock(mutex_);
  
      // Promote display mode
-@@ -564,12 +679,16 @@ public:
-     if (fullscreen_desc_.Windowed) {
+@@ -570,12 +685,16 @@ public:
+       lock = {};
        wsi::resizeWindow(hWnd, &window_state_, newDisplayMode.Width,
                          newDisplayMode.Height);
 +    } else if (native_fullscreen_) {
@@ -1790,7 +1610,7 @@ index 5e9404d..60bb94d 100644
      return S_OK;
    };
  
-@@ -720,8 +839,10 @@ public:
+@@ -726,8 +845,10 @@ public:
  
    SyncFrameState SyncFrame(uint64_t current_frame_id) {
      if (frame_latency_fence_) {
@@ -1802,7 +1622,7 @@ index 5e9404d..60bb94d 100644
        return SyncFrameState(current_frame_id, frame_latency_fence_.get());
      }
      return SyncFrameState();
-@@ -750,7 +871,9 @@ public:
+@@ -757,7 +878,9 @@ public:
      if (should_exit_fs)
        SetFullscreenState(FALSE, nullptr);
  
@@ -1812,7 +1632,7 @@ index 5e9404d..60bb94d 100644
  
      device_context_->PrepareFlush();
      if (hr == DXGI_STATUS_OCCLUDED) {
-@@ -1077,8 +1200,13 @@ private:
+@@ -1085,8 +1208,13 @@ private:
    Rc<Presenter> presenter;
    ModeSetGuard modeset_guard_;
    dxmt::mutex mutex_;
@@ -1826,7 +1646,7 @@ index 5e9404d..60bb94d 100644
  
    std::conditional<EnableMetalFX, Rc<SpatialScaler>, std::monostate>::type metalfx_scaler;
    std::conditional<EnableMetalFX, Com<D3D11ResourceCommon>, std::monostate>::type upscaled_backbuffer_;
-@@ -1129,4 +1257,4 @@ CreateSwapChain(
+@@ -1140,4 +1268,4 @@ CreateSwapChain(
    return S_OK;
  };
  
@@ -1865,7 +1685,7 @@ index 036b76b..518cfc3 100644
    chunk_last = reinterpret_cast<RefAddChunk<> *>(&chunk_placed);
    chunk_placed.next_chunk = nullptr;
 diff --git a/src/dxmt/dxmt_buffer.cpp b/src/dxmt/dxmt_buffer.cpp
-index e918e63..ab5c052 100644
+index 9a4139d..a2392a5 100644
 --- a/src/dxmt/dxmt_buffer.cpp
 +++ b/src/dxmt/dxmt_buffer.cpp
 @@ -16,6 +16,7 @@
@@ -1892,7 +1712,7 @@ index e918e63..ab5c052 100644
    fenceTrackers.resize(suballocation_count_);
    if (flags_.test(BufferAllocationFlag::CpuPlaced)) {
      placed_buffer = wsi::aligned_malloc(info_.length, DXMT_PAGE_SIZE);
-@@ -52,6 +55,7 @@ BufferAllocation::BufferAllocation(WMT::Device device, const WMTBufferInfo &info
+@@ -72,6 +75,7 @@ BufferAllocation::BufferAllocation(
  
  void
  BufferAllocation::free() {
@@ -1900,7 +1720,7 @@ index e918e63..ab5c052 100644
    if (placed_buffer) {
      wsi::aligned_free(placed_buffer);
      placed_buffer = nullptr;
-@@ -97,6 +101,7 @@ Buffer::residency(BufferViewKey key, BufferAllocation *allocation) {
+@@ -117,6 +121,7 @@ Buffer::residency(BufferViewKey key, BufferAllocation *allocation) {
  
  void
  Buffer::prepareAllocationViews(BufferAllocation *allocation) {
@@ -1909,7 +1729,7 @@ index e918e63..ab5c052 100644
    for (unsigned version = allocation->version_; version < version_; version++) {
      auto format = viewDescriptors_[version].format;
 diff --git a/src/dxmt/dxmt_buffer.hpp b/src/dxmt/dxmt_buffer.hpp
-index 9feb708..9ea4877 100644
+index 057e767..7d0620c 100644
 --- a/src/dxmt/dxmt_buffer.hpp
 +++ b/src/dxmt/dxmt_buffer.hpp
 @@ -18,6 +18,7 @@
@@ -1920,7 +1740,7 @@ index 9feb708..9ea4877 100644
  #include "Metal.hpp"
  #include "dxmt_deptrack.hpp"
  #include "dxmt_residency.hpp"
-@@ -135,6 +136,7 @@ public:
+@@ -136,6 +137,7 @@ public:
  
    void
    updateContents(uint64_t offset, const void *data, uint64_t length, uint32_t suballocation = 0) noexcept {
@@ -2120,10 +1940,10 @@ index 89ffc37..be133dc 100644
      chunk.reset();
      cpu_coherent.signal(internal_seq);
 diff --git a/src/dxmt/dxmt_command_queue.hpp b/src/dxmt/dxmt_command_queue.hpp
-index 52d4109..80581c8 100644
+index fa584b3..92f5098 100644
 --- a/src/dxmt/dxmt_command_queue.hpp
 +++ b/src/dxmt/dxmt_command_queue.hpp
-@@ -30,15 +30,20 @@
+@@ -30,16 +30,21 @@
  #include "dxmt_resource_initializer.hpp"
  #include "dxmt_ring_bump_allocator.hpp"
  #include "dxmt_statistics.hpp"
@@ -2138,13 +1958,14 @@ index 52d4109..80581c8 100644
  #include <cstddef>
  #include <cstdint>
  #include <cstdio>
+ #include <ctime>
  #include <cstdlib>
  #include <span>
 +#include <thread>
  #include <unistd.h>
  
  namespace dxmt {
-@@ -172,12 +177,23 @@ private:
+@@ -173,12 +178,23 @@ private:
    std::array<CommandChunk, kCommandChunkCount> chunks;
    uint64_t encoder_seq = 1;
    uint64_t frame_count = 0;
@@ -2174,7 +1995,7 @@ index 52d4109..80581c8 100644
    uint64_t frame_log_compiles_ = 0;
  
    dxmt::thread encodeThread;
-@@ -270,62 +286,72 @@ public:
+@@ -271,69 +287,72 @@ public:
      statistics.compute(frame_count);
      frame_count++;
      statistics.at(frame_count).reset();
@@ -2234,6 +2055,13 @@ index 52d4109..80581c8 100644
 -        frame_log_ = std::fopen(path, "w");
 -        if (frame_log_) {
 -          std::setvbuf(frame_log_, nullptr, _IOFBF, 1 << 20);
+-          std::time_t now_wall = std::time(nullptr);
+-          char started[64] = "unknown";
+-          if (std::tm tm_buf; localtime_s(&tm_buf, &now_wall) == 0)
+-            std::strftime(started, sizeof(started), "%Y-%m-%dT%H:%M:%S%z", &tm_buf);
+-          // Schema preamble: comment lines before the header identify the format
+-          // version and anchor the log to wall clock (frame rows carry no timestamps).
+-          std::fprintf(frame_log_, "# schema=dxmt-d3d11 v2\n# started=%s pid=%d\n", started, (int)getpid());
 -          std::fputs("frame,dt_us,commit_us,prep_us,flush_us,block_us,latwait_us,cmdbufs,compiles\n", frame_log_);
 -        }
 -      }
@@ -2286,7 +2114,7 @@ index 52d4109..80581c8 100644
    };
  
    std::tuple<WMT::Buffer, uint64_t>
-@@ -362,4 +388,4 @@ public:
+@@ -370,4 +389,4 @@ public:
    void Retain(uint64_t seq, Allocation *allocation);
  };
  
@@ -3278,7 +3106,7 @@ index 6762d47..a5c8c9d 100644
      Task task;
      {
 diff --git a/src/dxmt/dxmt_texture.cpp b/src/dxmt/dxmt_texture.cpp
-index 8db2874..bb42216 100644
+index 0e5b4bd..ebef9ec 100644
 --- a/src/dxmt/dxmt_texture.cpp
 +++ b/src/dxmt/dxmt_texture.cpp
 @@ -16,6 +16,7 @@
@@ -3327,7 +3155,7 @@ index 8db2874..bb42216 100644
    WMTTextureInfo info = info_; // copy
    info.mach_port = 0;
 diff --git a/src/winemetal/unix/cache.c b/src/winemetal/unix/cache.c
-index f7a122b..427494b 100644
+index f5a36e7..1b9134e 100644
 --- a/src/winemetal/unix/cache.c
 +++ b/src/winemetal/unix/cache.c
 @@ -1,5 +1,6 @@
@@ -3380,8 +3208,7 @@ index f7a122b..427494b 100644
 +    _pendingLock = (os_unfair_lock)OS_UNFAIR_LOCK_INIT;
      NSString *dbPath = resolve_cache_dir(path, true);
      if (!dbPath) {
--      NSLog(@"[CacheReader] Failed to resolve cache path");
-+      NSLog(@"[CacheWriter] Failed to resolve cache path");
+       NSLog(@"[CacheWriter] Failed to resolve cache path");
 +      [self release];
        return nil;
      }
@@ -5874,7 +5701,7 @@ index 0000000..1a7893d
 +                                               DXMTRecipeLibraryLoad load,
 +                                               NSError **error);
 diff --git a/src/winemetal/unix/winemetal_unix.c b/src/winemetal/unix/winemetal_unix.c
-index 5fda009..c71de47 100644
+index 2776e47..527ca7a 100644
 --- a/src/winemetal/unix/winemetal_unix.c
 +++ b/src/winemetal/unix/winemetal_unix.c
 @@ -12,6 +12,9 @@
@@ -5890,7 +5717,7 @@ index 5fda009..c71de47 100644
 @@ -341,6 +344,14 @@ _MTLDevice_newLibrary(void *obj) {
    NSError *err = NULL;
    params->ret_library = (obj_handle_t)[device newLibraryWithData:(dispatch_data_t)params->data error:&err];
-   params->ret_error = (obj_handle_t)err;
+   params->ret_error = (obj_handle_t)[err retain];
 +  if (params->ret_library && dxmt_pipeline_cache_enabled()) {
 +    @autoreleasepool {
 +      dxmt_recipe_register_library((id<MTLLibrary>)params->ret_library, (dispatch_data_t)params->data,
@@ -5924,10 +5751,10 @@ index 5fda009..c71de47 100644
 -                                                                                                error:&err];
 +  params->ret_pso = (obj_handle_t)dxmt_pipeline_cache_new_render_pipeline(
 +      (id<MTLDevice>)params->device, descriptor, info, options, &err);
-   params->ret_error = (obj_handle_t)err;
+   params->ret_error = (obj_handle_t)[err retain];
    if (!err && info->binary_archive_for_serialization) {
      [(id<MTLBinaryArchive>)info->binary_archive_for_serialization addRenderPipelineFunctionsWithDescriptor:descriptor
-@@ -1298,6 +1312,7 @@ _MTLBuffer_didModifyRange(void *obj) {
+@@ -1303,6 +1317,7 @@ _MTLBuffer_didModifyRange(void *obj) {
  static NTSTATUS
  _MTLCommandBuffer_presentDrawable(void *obj) {
    struct unixcall_generic_obj_obj_noret *params = obj;
@@ -5935,7 +5762,7 @@ index 5fda009..c71de47 100644
    [(id<MTLCommandBuffer>)params->handle presentDrawable:(id<MTLDrawable>)params->arg];
    return STATUS_SUCCESS;
  }
-@@ -1305,6 +1320,7 @@ _MTLCommandBuffer_presentDrawable(void *obj) {
+@@ -1310,6 +1325,7 @@ _MTLCommandBuffer_presentDrawable(void *obj) {
  static NTSTATUS
  _MTLCommandBuffer_presentDrawableAfterMinimumDuration(void *obj) {
    struct unixcall_generic_obj_obj_double_noret *params = obj;
@@ -5943,7 +5770,7 @@ index 5fda009..c71de47 100644
    [(id<MTLCommandBuffer>)params->handle presentDrawable:(id<MTLDrawable>)params->arg0
                                     afterMinimumDuration:params->arg1];
    return STATUS_SUCCESS;
-@@ -1596,6 +1612,8 @@ _MetalLayer_setProps(void *obj) {
+@@ -1633,6 +1649,8 @@ _MetalLayer_setProps(void *obj) {
      layer.displaySyncEnabled = props->display_sync_enabled;
      layer.drawableSize = CGSizeMake(props->drawable_width, props->drawable_height);
      layer.pixelFormat = to_metal_pixel_format(props->pixel_format);
@@ -5952,7 +5779,7 @@ index 5fda009..c71de47 100644
    });
    return STATUS_SUCCESS;
  }
-@@ -1681,6 +1699,34 @@ _CreateMetalViewFromHWND(void *obj) {
+@@ -1718,6 +1736,34 @@ _CreateMetalViewFromHWND(void *obj) {
    return STATUS_SUCCESS;
  }
  
@@ -5987,25 +5814,25 @@ index 5fda009..c71de47 100644
  static NTSTATUS
  _ReleaseMetalView(void *obj) {
    struct unixcall_generic_obj_noret *params = obj;
-@@ -2401,6 +2447,8 @@ _MTLLibrary_newFunctionWithConstants(void *obj) {
+@@ -2455,6 +2501,8 @@ _MTLLibrary_newFunctionWithConstants(void *obj) {
  
    params->ret = (obj_handle_t)[library newFunctionWithName:name constantValues:values error:&err];
-   params->ret_error = (obj_handle_t)err;
+   params->ret_error = (obj_handle_t)[err retain];
 +  if (params->ret && dxmt_pipeline_cache_enabled())
 +    dxmt_recipe_forget_function((id<MTLFunction>)params->ret);
    [name release];
    [values release];
    return STATUS_SUCCESS;
-@@ -3092,6 +3140,8 @@ _MTLDevice_newLibraryWithSource(void *obj) {
-       [[NSString alloc] initWithBytes:params->source.ptr length:params->length encoding:NSASCIIStringEncoding];
-   NSError *err = NULL;
-   params->ret_library = (obj_handle_t)[device newLibraryWithSource:source options:nil error:&err];
+@@ -3150,6 +3198,8 @@ _MTLDevice_newLibraryWithSource(void *obj) {
+   MTLCompileOptions * options = [[MTLCompileOptions alloc] init];
+   options.languageVersion = MTLLanguageVersion3_1;
+   params->ret_library = (obj_handle_t)[device newLibraryWithSource:source options:options error:&err];
 +  if (params->ret_library && dxmt_pipeline_cache_enabled())
 +    dxmt_recipe_forget_library((id<MTLLibrary>)params->ret_library);
-   params->ret_error = (obj_handle_t)err;
+   params->ret_error = (obj_handle_t)[err retain];
    [source release];
-   return STATUS_SUCCESS;
-@@ -3269,6 +3319,8 @@ const void *__wine_unix_call_funcs[] = {
+   [options release];
+@@ -3328,6 +3378,8 @@ const void *__wine_unix_call_funcs[] = {
      &_MTLDevice_newIndirectCommandBuffer,
      &_MTLDevice_newLibraryWithSource,
      &_MTLTexture_getBytes,
@@ -6014,7 +5841,7 @@ index 5fda009..c71de47 100644
  };
  
  #ifndef DXMT_NATIVE
-@@ -3419,5 +3471,7 @@ const void *__wine_unix_call_wow64_funcs[] = {
+@@ -3478,5 +3530,7 @@ const void *__wine_unix_call_wow64_funcs[] = {
      &_MTLDevice_newIndirectCommandBuffer,
      &_MTLDevice_newLibraryWithSource,
      &_MTLTexture_getBytes,
@@ -6023,10 +5850,10 @@ index 5fda009..c71de47 100644
  };
  #endif
 diff --git a/src/winemetal/winemetal.h b/src/winemetal/winemetal.h
-index 7bee6fd..eae75cc 100644
+index 97fffc7..a4f80df 100644
 --- a/src/winemetal/winemetal.h
 +++ b/src/winemetal/winemetal.h
-@@ -1772,6 +1772,9 @@ WINEMETAL_API obj_handle_t CreateMetalViewFromHWND(intptr_t hwnd, obj_handle_t d
+@@ -1783,6 +1783,9 @@ WINEMETAL_API obj_handle_t CreateMetalViewFromHWND(intptr_t hwnd, obj_handle_t d
  
  WINEMETAL_API void ReleaseMetalView(obj_handle_t view);
  

@@ -13,7 +13,7 @@ reference.
 
 | Source | Exact input |
 |---|---|
-| DXMT | `https://github.com/NerRobDog/dxmt`, commit `c5dc3a0dfe9108e667da43de871324bd298c9c02` |
+| DXMT | `https://github.com/shreyashsaitwal/dxmt`, commit `53ac94701fa76e6696af0926e18f913c5a2e5ffa` |
 | DirectX headers | `https://github.com/misyltoad/mingw-directx-headers`, submodule commit `9df86f2341616ef1888ae59919feaa6d4fad693d` |
 | NVIDIA NVAPI headers (MIT) | `https://github.com/NVIDIA/nvapi`, DXMT submodule commit `d08488fcc82eef313b0464db37d2955709691e94` |
 | Wine | `https://media.codeweavers.com/pub/crossover/source/crossover-sources-26.3.0.tar.gz`, `sources/wine` subtree |

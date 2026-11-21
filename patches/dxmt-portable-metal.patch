@@ -1,4 +1,5 @@
 diff --git a/meson.build b/meson.build
+index e10c901..25dfbd7 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -114,12 +114,12 @@ endif

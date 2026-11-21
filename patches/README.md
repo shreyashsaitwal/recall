@@ -2,8 +2,8 @@
 
 ## DXMT
 
-These apply to commit `c5dc3a0dfe9108e667da43de871324bd298c9c02` of
-[NerRobDog/dxmt](https://github.com/NerRobDog/dxmt), in this order.
+These apply to commit `53ac94701fa76e6696af0926e18f913c5a2e5ffa` of
+[shreyashsaitwal/dxmt](https://github.com/shreyashsaitwal/dxmt), in this order.
 
 `dxmt-v1-private.patch` is the complete DXMT integration patch: the fullscreen
 canvas, presentation and shader/pipeline caching tuned for Overwatch.

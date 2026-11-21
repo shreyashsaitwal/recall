@@ -8,7 +8,7 @@ code or material embedded in a patch or generated test fixture.
 
 | Component | Source | Licensing / distribution status |
 |---|---|---|
-| DXMT integration patch | [DXMT fork](https://github.com/NerRobDog/dxmt) at `c5dc3a0dfe9108e667da43de871324bd298c9c02` | LGPL-2.1-or-later; original notices and license text retained under licenses/ |
+| DXMT integration patch | [DXMT fork](https://github.com/shreyashsaitwal/dxmt) at `53ac94701fa76e6696af0926e18f913c5a2e5ffa` | LGPL-2.1-or-later; original notices and license text retained under licenses/ |
 | Wine Mac driver patch | [CodeWeavers Wine 26.3 source](https://media.codeweavers.com/pub/crossover/source/crossover-sources-26.3.0.tar.gz) | Existing Wine LGPL-2.1-or-later terms retained; this is not the proprietary CrossOver application |
 | Runtime assembly reference | [Soju](https://github.com/BCD1210/soju/tree/3a350b32bf906dd2a509b18c642a5a2676de022a) | Separate upstream project; GPL-3.0 scripts are referenced, not relicensed or vendored as project code |
 | DXMT build dependencies | LLVM, DirectX headers, Metal toolchain, build tools | Separate upstream licenses; not included in this repository |

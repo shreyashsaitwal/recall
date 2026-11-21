@@ -22,7 +22,7 @@ MESON = TOOLS / "python/bin/meson"
 ENGINE = ROOT / "runtime/soju-engine-dxmt-ow2-v0.2"
 BUILD = ROOT / "runtime/build/dxmt-local"
 INSTALL = BUILD / "install"
-BASE_COMMIT = "c5dc3a0dfe9108e667da43de871324bd298c9c02"
+BASE_COMMIT = "53ac94701fa76e6696af0926e18f913c5a2e5ffa"
 
 
 def command(*args, **kwargs):

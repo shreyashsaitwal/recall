@@ -1,4 +1,5 @@
 diff --git a/src/winemetal/unix/pipeline_cache.c b/src/winemetal/unix/pipeline_cache.c
+index db56513..36133af 100644
 --- a/src/winemetal/unix/pipeline_cache.c
 +++ b/src/winemetal/unix/pipeline_cache.c
 @@ -16,13 +16,18 @@
@@ -23,7 +24,7 @@ diff --git a/src/winemetal/unix/pipeline_cache.c b/src/winemetal/unix/pipeline_c
  static atomic_bool globallyStopped;
  static const uint64_t DiagnosticByteLimit = 8u * 1024u * 1024u;
  
-@@ -35,6 +40,36 @@
+@@ -35,6 +40,36 @@ static NSString *digest(NSData *data) {
    return [NSString stringWithUTF8String:result];
  }
  
@@ -60,7 +61,7 @@ diff --git a/src/winemetal/unix/pipeline_cache.c b/src/winemetal/unix/pipeline_c
  static BOOL validKey(NSString *key) {
    if (![key isKindOfClass:[NSString class]] || key.length != 64) return NO;
    const char *text = key.UTF8String;
-@@ -63,6 +98,24 @@
+@@ -63,6 +98,24 @@ static NSData *readBounded(NSString *path, uint64_t limit) {
    } @finally { close(fd); }
  }
  
@@ -85,7 +86,7 @@ diff --git a/src/winemetal/unix/pipeline_cache.c b/src/winemetal/unix/pipeline_c
  static unsigned envUnsigned(const char *name, unsigned fallback, unsigned maximum) {
    const char *value = getenv(name);
    if (!value || !*value) return fallback;
-@@ -109,7 +162,7 @@
+@@ -109,7 +162,7 @@ typedef struct { char key[65]; id<MTLRenderPipelineState> state; double cost_us;
    NSMutableArray *_archiveEntries;
    NSMutableSet *_archivedKeys, *_capturedKeys;
    NSSet *_knownRecipeKeys;
@@ -94,7 +95,7 @@ diff --git a/src/winemetal/unix/pipeline_cache.c b/src/winemetal/unix/pipeline_c
    double _minimumPrepareCost;
    double _startupDeadline;
    unsigned _prewarmLimit, _startupBudget;
-@@ -202,6 +255,9 @@
+@@ -202,6 +255,9 @@ typedef struct { char key[65]; id<MTLRenderPipelineState> state; double cost_us;
    // process retains its original 128-state/10-second startup defaults.
    _offline = YES;
    _offlineVerify = envUnsigned("DXMT_PIPELINE_CACHE_VERIFY_ONLY", 0, 1) != 0;
@@ -104,7 +105,7 @@ diff --git a/src/winemetal/unix/pipeline_cache.c b/src/winemetal/unix/pipeline_c
    _prewarmLimit = envUnsigned("DXMT_PIPELINE_CACHE_PREWARM_LIMIT", 4096, 8192);
    budget = envUnsigned("DXMT_PIPELINE_CACHE_PREWARM_MS", 180000, 600000);
    _minimumPrepareCost = envUnsigned("DXMT_PIPELINE_CACHE_MIN_COST_US", 16667, 60000000);
-@@ -409,7 +465,7 @@
+@@ -409,7 +465,7 @@ typedef struct { char key[65]; id<MTLRenderPipelineState> state; double cost_us;
  }
  
  - (void)loadArchive {
@@ -113,7 +114,7 @@ diff --git a/src/winemetal/unix/pipeline_cache.c b/src/winemetal/unix/pipeline_c
    NSDictionary *manifest = metadata ? [NSJSONSerialization JSONObjectWithData:metadata options:0 error:nil] : nil;
    if (![manifest isKindOfClass:NSDictionary.class]) return;
    NSArray *entries = nil;
-@@ -417,20 +473,50 @@
+@@ -417,20 +473,50 @@ typedef struct { char key[65]; id<MTLRenderPipelineState> state; double cost_us;
      entries = manifest[@"archives"];
    else if (validKey(manifest[@"sha256"]))
      entries = @[manifest]; // Preserve and migrate the previous single-archive format.
@@ -171,7 +172,7 @@ diff --git a/src/winemetal/unix/pipeline_cache.c b/src/winemetal/unix/pipeline_c
        MTLBinaryArchiveDescriptor *descriptor = [[MTLBinaryArchiveDescriptor alloc] init];
        descriptor.url = [NSURL fileURLWithPath:path];
        NSError *error = nil;
-@@ -446,14 +532,17 @@
+@@ -446,14 +532,17 @@ typedef struct { char key[65]; id<MTLRenderPipelineState> state; double cost_us;
            }
          }
          [archives addObject:archive];
@@ -192,7 +193,7 @@ diff --git a/src/winemetal/unix/pipeline_cache.c b/src/winemetal/unix/pipeline_c
    // Publish immutable objects exactly once. Neither prewarm nor runtime ever
    // adds functions to, or serializes, an archive in this array.
    os_unfair_lock_lock(&_lock);
-@@ -467,11 +556,12 @@
+@@ -467,11 +556,12 @@ typedef struct { char key[65]; id<MTLRenderPipelineState> state; double cost_us;
    NSDictionary *selectionRanks = nil;
  #ifdef DXMT_PIPELINE_CACHE_OFFLINE_TOOL
    const char *selectionPath = getenv("DXMT_PIPELINE_CACHE_SELECTION");
@@ -208,7 +209,7 @@ diff --git a/src/winemetal/unix/pipeline_cache.c b/src/winemetal/unix/pipeline_c
      if (valid) for (id key in keys) {
        if (!validKey(key) || ranks[key]) { valid = NO; break; }
        ranks[key] = @(ranks.count);
-@@ -534,7 +624,10 @@
+@@ -534,7 +624,10 @@ typedef struct { char key[65]; id<MTLRenderPipelineState> state; double cost_us;
    // adding another library to a loaded archive can succeed yet later fail
    // serialization. A fresh immutable batch preserves prior batches unchanged.
    NSError *error = nil;
@@ -220,7 +221,7 @@ diff --git a/src/winemetal/unix/pipeline_cache.c b/src/winemetal/unix/pipeline_c
        ? [_device newBinaryArchiveWithDescriptor:archiveDescriptor error:&error] : nil;
    [archiveDescriptor release];
    unsigned attempted = 0;
-@@ -579,7 +672,7 @@
+@@ -579,7 +672,7 @@ typedef struct { char key[65]; id<MTLRenderPipelineState> state; double cost_us;
          atomic_fetch_add(&_prewarmed, 1);
          // Archive population is startup-only, and only begun while budget remains.
          // An in-flight Metal call cannot be canceled and may finish after deadline.
@@ -229,7 +230,7 @@ diff --git a/src/winemetal/unix/pipeline_cache.c b/src/winemetal/unix/pipeline_c
              ![_capturedKeys containsObject:entry[@"key"]] &&
              !(atomic_load(&_stopped) || atomic_load(&globallyStopped)) && CACurrentMediaTime() < _startupDeadline) {
            descriptor.binaryArchives = nil;
-@@ -603,11 +696,13 @@
+@@ -603,11 +696,13 @@ typedef struct { char key[65]; id<MTLRenderPipelineState> state; double cost_us;
  }
  
  - (void)persistArchive:(id<MTLBinaryArchive>)archive {
@@ -245,7 +246,7 @@ diff --git a/src/winemetal/unix/pipeline_cache.c b/src/winemetal/unix/pipeline_c
      atomic_fetch_add(&_archiveFailures, 1);
      [self event:@"archive_serialize" values:@{@"success": @NO, @"failure_stage": @"incomplete_previous_coverage"}];
      return;
-@@ -616,36 +711,35 @@
+@@ -616,36 +711,35 @@ typedef struct { char key[65]; id<MTLRenderPipelineState> state; double cost_us;
    @try {
      NSError *error = nil;
      BOOL serialized = [archive serializeToURL:[NSURL fileURLWithPath:temporary] error:&error];

@@ -1,8 +1,8 @@
 diff --git a/src/d3d11/d3d11_context_impl.cpp b/src/d3d11/d3d11_context_impl.cpp
-index b39df41..b203443 100644
+index 584dfbc..6b09762 100644
 --- a/src/d3d11/d3d11_context_impl.cpp
 +++ b/src/d3d11/d3d11_context_impl.cpp
-@@ -5325,6 +5325,19 @@ public:
+@@ -5344,6 +5344,19 @@ public:
      Rc<Texture> mv_offset_texture;
      Rc<Texture> sharpen_texture;
  
@@ -22,7 +22,7 @@ index b39df41..b203443 100644
      for(CachedTemporalScaler& entry: scaler_cache_) {
        if(pDesc->AutoExposure != entry.auto_exposure) continue;
        if(input->width() != entry.input_width) continue;
-@@ -5373,6 +5386,7 @@ public:
+@@ -5393,6 +5406,7 @@ public:
        info.input_content_max_scale =  3.0f;
        info.requires_synchronous_initialization = true;
        scaler_entry.scaler = new TemporalScaler(ctx_->device->GetMTLDevice(), info);
@@ -30,7 +30,7 @@ index b39df41..b203443 100644
        WARN("TemporalUpscale: MetalFX scaler ", info.input_width, "x", info.input_height, " -> ", info.output_width, "x",
             info.output_height, scaler_entry.scaler->scaler() ? "" : " (MetalFX refused it)", "; color format ",
             info.color_format, " mips ", input->miplevelCount(), " samples ", input->sampleCount(), "; depth ",
-@@ -5542,6 +5556,7 @@ private:
+@@ -5564,6 +5578,7 @@ private:
  
    MTLD3D11DeviceContextImplBase<ContextInternalState> *ctx_;
    std::vector<CachedTemporalScaler> scaler_cache_;
@@ -299,7 +299,7 @@ index 13337de..57a292b 100644
    auto &chunk = chunks[seq % kCommandChunkCount];
    auto &tracker = chunk.ref_tracker;
 diff --git a/src/dxmt/dxmt_command_queue.hpp b/src/dxmt/dxmt_command_queue.hpp
-index 902a9bc..286cf41 100644
+index 1bbb874..aa8fe04 100644
 --- a/src/dxmt/dxmt_command_queue.hpp
 +++ b/src/dxmt/dxmt_command_queue.hpp
 @@ -38,6 +38,9 @@
@@ -312,7 +312,7 @@ index 902a9bc..286cf41 100644
  #include <cstddef>
  #include <cstdint>
  #include <cstdio>
-@@ -211,6 +214,39 @@ private:
+@@ -212,6 +215,39 @@ private:
    FrameTelemetry::Stamp frame_log_last_{};
    uint64_t frame_log_compiles_ = 0;
  
@@ -352,7 +352,7 @@ index 902a9bc..286cf41 100644
    dxmt::thread encodeThread;
    dxmt::thread finishThread;
    WMT::Device device;
-@@ -281,6 +317,13 @@ public:
+@@ -282,6 +318,13 @@ public:
      return shared_event_listener;
    }
  
@@ -367,7 +367,7 @@ index 902a9bc..286cf41 100644
    This is not thread-safe!
    CurrentChunk & CommitCurrentChunk should be called on the same thread
 diff --git a/src/dxmt/dxmt_context.cpp b/src/dxmt/dxmt_context.cpp
-index a9a1b1a..3ab25fb 100644
+index 659e2eb..90fb27f 100644
 --- a/src/dxmt/dxmt_context.cpp
 +++ b/src/dxmt/dxmt_context.cpp
 @@ -1065,6 +1065,8 @@ ArgumentEncodingContext::flushCommands(WMT::CommandBuffer cmdbuf, uint64_t seqId
@@ -418,7 +418,7 @@ index a9a1b1a..3ab25fb 100644
  
        auto end_scaler = cmdbuf.blitCommandEncoder();
 diff --git a/src/dxmt/dxmt_context.hpp b/src/dxmt/dxmt_context.hpp
-index 2ecbf7f..ac5c664 100644
+index 5516e62..8e64ec7 100644
 --- a/src/dxmt/dxmt_context.hpp
 +++ b/src/dxmt/dxmt_context.hpp
 @@ -837,6 +837,16 @@ public:
@@ -485,7 +485,7 @@ index 267d15d..0c89c9e 100644
    addResidencySet(ResidencySet residency_set) {
      MTLCommandQueue_addResidencySet(handle, residency_set.handle);
 diff --git a/src/winemetal/unix/winemetal_unix.c b/src/winemetal/unix/winemetal_unix.c
-index 2e71165..d3cbbe7 100644
+index 6fc91aa..7a19b85 100644
 --- a/src/winemetal/unix/winemetal_unix.c
 +++ b/src/winemetal/unix/winemetal_unix.c
 @@ -1,6 +1,9 @@
@@ -498,7 +498,7 @@ index 2e71165..d3cbbe7 100644
  #import <Cocoa/Cocoa.h>
  #import <ColorSync/ColorSync.h>
  #import <CoreFoundation/CFRunLoop.h>
-@@ -1739,6 +1742,155 @@ _WMTGetHostTimeNs(void *obj) {
+@@ -1776,6 +1779,155 @@ _WMTGetHostTimeNs(void *obj) {
    return STATUS_SUCCESS;
  }
  
@@ -654,7 +654,7 @@ index 2e71165..d3cbbe7 100644
  static NTSTATUS
  _SetMetalViewFullscreen(void *obj) {
    struct unixcall_generic_obj_uint64_uint64_ret *params = obj;
-@@ -3346,6 +3498,10 @@ const void *__wine_unix_call_funcs[] = {
+@@ -3405,6 +3557,10 @@ const void *__wine_unix_call_funcs[] = {
      &_ConfigureMetalViewCanvas,
      &_SetMetalViewFullscreen,
      &_WMTGetHostTimeNs,
@@ -665,7 +665,7 @@ index 2e71165..d3cbbe7 100644
  };
  
  #ifndef DXMT_NATIVE
-@@ -3499,5 +3655,9 @@ const void *__wine_unix_call_wow64_funcs[] = {
+@@ -3558,5 +3714,9 @@ const void *__wine_unix_call_wow64_funcs[] = {
      &_ConfigureMetalViewCanvas,
      &_SetMetalViewFullscreen,
      &_WMTGetHostTimeNs,
@@ -676,10 +676,10 @@ index 2e71165..d3cbbe7 100644
  };
  #endif
 diff --git a/src/winemetal/winemetal.h b/src/winemetal/winemetal.h
-index 09a4570..1d42c52 100644
+index 655fa7b..366b455 100644
 --- a/src/winemetal/winemetal.h
 +++ b/src/winemetal/winemetal.h
-@@ -2143,4 +2143,40 @@ WINEMETAL_API void MTLTexture_getBytes(
+@@ -2154,4 +2154,40 @@ WINEMETAL_API void MTLTexture_getBytes(
      struct WMTMemoryPointer data, uint64_t bytes_per_row, uint64_t bytes_per_image
  );
  
