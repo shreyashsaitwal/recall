@@ -1603,16 +1603,44 @@ index ce6a702..3778c1c 100644
              [self handleMouseMove:anEvent];
              ret = mouseCaptureWindow && ![windowsBeingDragged count];
              if (macdrv_input_stats_on)
-@@ -2678,6 +3878,8 @@ - (BOOL) handleEvent:(NSEvent*)anEvent
+@@ -2678,6 +3878,19 @@ - (BOOL) handleEvent:(NSEvent*)anEvent
                   type == NSEventTypeRightMouseDown || type == NSEventTypeRightMouseUp ||
                   type == NSEventTypeOtherMouseDown || type == NSEventTypeOtherMouseUp)
          {
++            WineWindow* win = (WineWindow*)[anEvent window];
++            BOOL inFullscreenWine = [NSApp isActive] && ![windowsBeingDragged count] &&
++                                    [win isKindOfClass:[WineWindow class]] && [win isKeyWindow] &&
++                                    (([win styleMask] & NSWindowStyleMaskFullScreen) || win.fullscreen);
++
 +            __atomic_store_n(&macos_mouse_last, raw_clock(), __ATOMIC_RELAXED);
 +            hid_hand_over();
              [self handleMouseButton:anEvent];
-             ret = mouseCaptureWindow && ![windowsBeingDragged count];
+-            ret = mouseCaptureWindow && ![windowsBeingDragged count];
++            ret = (mouseCaptureWindow || inFullscreenWine) && ![windowsBeingDragged count];
++            if (ret && lastTargetWindow && cursor && !clientWantsCursorHidden &&
++                !cursorHidden && !mouselookWindow && ![windowsBeingDragged count])
++            {
++                [cursor set];
++                cursorIsCurrent = TRUE;
++            }
          }
-@@ -2848,6 +4050,11 @@ - (void) setupObservations
+@@ -2737,6 +3950,15 @@ - (void) didSendEvent:(NSEvent*)anEvent
+                 [self handleCommandTab];
+             }
+         }
++        else if ((type == NSEventTypeLeftMouseDown || type == NSEventTypeLeftMouseUp ||
++                  type == NSEventTypeRightMouseDown || type == NSEventTypeRightMouseUp ||
++                  type == NSEventTypeOtherMouseDown || type == NSEventTypeOtherMouseUp) &&
++                 lastTargetWindow && cursor && !clientWantsCursorHidden && !cursorHidden &&
++                 !mouselookWindow && ![windowsBeingDragged count])
++        {
++            [cursor set];
++            cursorIsCurrent = TRUE;
++        }
+     }
+ 
+     - (void) setupObservations
+@@ -2848,6 +4070,11 @@ - (void) setupObservations
                      name:(NSString*)kTISNotifyEnabledKeyboardInputSourcesChanged
                    object:nil];
  
@@ -1624,7 +1652,7 @@ index ce6a702..3778c1c 100644
          /* CW Hack 22310 */
          [dnc addObserver:self
                  selector:@selector(handleExternalQuitRequest:)
-@@ -2895,6 +4102,7 @@ - (void) setupObservations
+@@ -2895,6 +4122,7 @@ - (void) setupObservations
                      usingBlock:^(NSNotification *note){
              if (displaysTemporarilyUncapturedForDialog)
              {
@@ -1632,7 +1660,7 @@ index ce6a702..3778c1c 100644
                  [self applicationDidBecomeActive:nil];
  
                  displaysTemporarilyUncapturedForDialog = FALSE;
-@@ -3235,9 +4443,18 @@ - (void)applicationDidBecomeActive:(NSNotification *)notification
+@@ -3235,9 +4463,18 @@ - (void)applicationDidBecomeActive:(NSNotification *)notification
          [self updateFullscreenWindows];
          [self adjustWindowLevels:YES];
  
@@ -1651,7 +1679,7 @@ index ce6a702..3778c1c 100644
  
          // If a Wine process terminates abruptly while it has the display captured
          // and switched to a different resolution, Mac OS X will uncapture the
-@@ -3248,8 +4465,27 @@ - (void)applicationDidBecomeActive:(NSNotification *)notification
+@@ -3248,8 +4485,27 @@ - (void)applicationDidBecomeActive:(NSNotification *)notification
          //
          // To solve this, we synthesize a displays-changed event whenever we're
          // activated.  This will provoke a re-synchronization of Wine's notion of
@@ -1681,11 +1709,17 @@ index ce6a702..3778c1c 100644
  
          // The cursor probably moved while we were inactive.  Accumulated mouse
          // movement deltas are invalidated.  Make sure the next mouse move event
-@@ -3257,11 +4493,13 @@ - (void)applicationDidBecomeActive:(NSNotification *)notification
+@@ -3257,11 +4513,19 @@ - (void)applicationDidBecomeActive:(NSNotification *)notification
          forceNextMouseMoveAbsolute = TRUE;
  
          [self updateMouselook];
 +        macdrv_v1_canvas_app_activated();
++        if (lastTargetWindow && cursor && !clientWantsCursorHidden && !cursorHidden &&
++            !mouselookWindow && ![windowsBeingDragged count])
++        {
++            [cursor set];
++            cursorIsCurrent = TRUE;
++        }
      }
  
      - (void)applicationDidChangeScreenParameters:(NSNotification *)notification
@@ -1695,7 +1729,7 @@ index ce6a702..3778c1c 100644
          [self sendDisplaysChanged:FALSE];
          [self adjustWindowLevels];
  
-@@ -3276,6 +4514,9 @@ - (void)applicationDidResignActive:(NSNotification *)notification
+@@ -3276,6 +4540,9 @@ - (void)applicationDidResignActive:(NSNotification *)notification
          macdrv_event* event;
          WineEventQueue* queue;
  
@@ -1705,7 +1739,7 @@ index ce6a702..3778c1c 100644
          [self updateMouselook];
          [self invalidateGotFocusEvents];
          [self releasePressedKeys];
-@@ -3791,10 +5032,38 @@ void macdrv_quit_reply(int reply)
+@@ -3791,10 +5058,38 @@ void macdrv_quit_reply(int reply)
  bool macdrv_using_input_method(void)
  {
      __block bool ret;
