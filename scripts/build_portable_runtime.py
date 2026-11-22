@@ -81,20 +81,38 @@ V1_PATCHES = {
 }
 
 
-def apply_once(source, patch):
+def git_apply_env(source):
+    env = os.environ.copy()
+    # Prevent git apply from walking up into a parent checkout (e.g. recall/.git)
+    # when the workspace lives inside the repo; otherwise git apply silently skips
+    # every file outside that subdirectory prefix and exits 0.
+    env['GIT_CEILING_DIRECTORIES'] = str(source.resolve().parent)
+    return env
+
+
+def apply_once(source, patch, digest=None):
+    digest = digest or sha(patch)
+    marker = source / '.applied-patches.json'
+    applied = json.loads(marker.read_text()) if marker.exists() else {}
+    if applied.get(patch.name) == digest:
+        return
+    if patch.name in applied:
+        raise RuntimeError(f'Patch {patch.name} changed after being applied; remove {source.parent} to re-extract')
+    env = git_apply_env(source)
     result = subprocess.run(['git', 'apply', '--check', str(patch)], cwd=source,
-                            capture_output=True)
+                            env=env, capture_output=True)
     if result.returncode == 0:
-        run(['git', 'apply', patch], cwd=source)
+        run(['git', 'apply', patch], cwd=source, env=env)
     else:
         reverse = subprocess.run(['git', 'apply', '--reverse', '--check', str(patch)],
-                                 cwd=source, capture_output=True)
-        if reverse.returncode == 0:
-            return
-        # Some pinned Soju patches have overlapping hunk context rejected by
-        # git apply. BSD patch accepts them without fuzzy context matching.
-        run(['/usr/bin/patch', '--dry-run', '-N', '-F0', '-p1', '-i', patch], cwd=source)
-        run(['/usr/bin/patch', '-N', '-F0', '-p1', '-i', patch], cwd=source)
+                                 cwd=source, env=env, capture_output=True)
+        if reverse.returncode != 0:
+            # Some pinned Soju patches have overlapping hunk context rejected by
+            # git apply. BSD patch accepts them without fuzzy context matching.
+            run(['/usr/bin/patch', '--dry-run', '-N', '-F0', '-p1', '-i', patch], cwd=source)
+            run(['/usr/bin/patch', '-N', '-F0', '-p1', '-i', patch], cwd=source)
+    applied[patch.name] = digest
+    marker.write_text(json.dumps(applied, indent=2) + '\n')
 
 
 def build(work, tools, headers, jobs):
@@ -105,25 +123,26 @@ def build(work, tools, headers, jobs):
     soju = extract(work, 'soju') / ('soju-' + SOJU)
     mono = extract(work, 'mono') / 'wine-mono-10.4.1'
     patch = ROOT / 'patches/wine-v1-canvas.patch'
-    if sha(patch) != '33d57c155761838988d98777a7cddb1b2d00417d07b2e19ca9533221aa9b6f65':
+    patch_sha = sha(patch)
+    if patch_sha != '33d57c155761838988d98777a7cddb1b2d00417d07b2e19ca9533221aa9b6f65':
         raise RuntimeError('The accepted native driver patch changed')
-    apply_once(wine, patch)
     # Mouselook with raw mouse input, accepted after the owner's play-tests on
     # 2026-09-25 and 2026-09-26. It is inert unless the app lists the game in
     # WINEMAC_MOUSELOOK.
     mouselook = ROOT / 'patches/wine-mouselook.patch'
-    if sha(mouselook) != '4e9d4ab2aff6ec38b03100d4802d2764efe1e33caf151cdb4c5de7a8dfa3dfdb':
+    mouselook_sha = sha(mouselook)
+    if mouselook_sha != '4e9d4ab2aff6ec38b03100d4802d2764efe1e33caf151cdb4c5de7a8dfa3dfdb':
         raise RuntimeError('The accepted mouselook patch changed')
-    apply_once(wine, mouselook)
     directory_patch = ROOT / 'patches/wine-portable-directory-boolean.patch'
-    if sha(directory_patch) != '9c7f811b1eb83d8c322d42509a82c1bcd786f101ce1b26fc1dc0c5badebe619b':
+    directory_sha = sha(directory_patch)
+    if directory_sha != '9c7f811b1eb83d8c322d42509a82c1bcd786f101ce1b26fc1dc0c5badebe619b':
         raise RuntimeError('Portable directory-query compatibility patch changed')
-    apply_once(wine, directory_patch)
+    soju_patches = []
     for name, expected in PATCHES.items():
         p = soju / 'patches' / name
         if sha(p) != expected:
             raise RuntimeError('Upstream compatibility patch changed')
-        apply_once(wine, p)
+        soju_patches.append((p, expected))
     # v1.0, after the owner's play-tests of candidates 5-7: the registry save from
     # a forked server, Unix library loads outside the virtual-memory lock, the
     # window driver's activation, canvas and pointer fixes. Their diagnostics
@@ -131,11 +150,34 @@ def build(work, tools, headers, jobs):
     # WINE_DISPLAY_LOG, WINEMAC_INPUT_STATS) stay off unless set. From 1.6, audio
     # devices connected or removed while a program runs reach it (wine-audio-devices), and
     # services keep their security descriptors (wine-service-security).
+    v1_patches = []
     for name, expected in V1_PATCHES.items():
         p = ROOT / 'patches' / name
         if sha(p) != expected:
             raise RuntimeError('The accepted v1.0 patch changed: ' + name)
-        apply_once(wine, p)
+        v1_patches.append((p, expected))
+    all_patches = [(patch, patch_sha), (mouselook, mouselook_sha),
+                   (directory_patch, directory_sha)] + soju_patches + v1_patches
+    # If an existing workspace already has wine-mouselook.patch or
+    # wine-winemac-activation.patch applied on top of wine-v1-canvas.patch,
+    # wine-v1-canvas.patch cannot reverse-check on its own. Record it in
+    # .applied-patches.json when its dependent patch reverse-checks cleanly.
+    marker = wine / '.applied-patches.json'
+    if not marker.exists():
+        env = git_apply_env(wine)
+        mouselook_applied = subprocess.run(
+            ['git', 'apply', '--reverse', '--check', str(mouselook)],
+            cwd=wine, env=env, capture_output=True).returncode == 0
+        activation_applied = subprocess.run(
+            ['git', 'apply', '--reverse', '--check', str(ROOT / 'patches/wine-winemac-activation.patch')],
+            cwd=wine, env=env, capture_output=True).returncode == 0
+        if mouselook_applied or activation_applied:
+            seeded = {patch.name: patch_sha}
+            if mouselook_applied:
+                seeded[mouselook.name] = mouselook_sha
+            marker.write_text(json.dumps(seeded, indent=2) + '\n')
+    for p, digest in all_patches:
+        apply_once(wine, p, digest)
     # The complete native driver supersedes Soju's native-window patches.
     # Omit its GOG-only Chromium injection (not used by the v6 launcher), which
     # also needs a rebase against CodeWeavers' Ubisoft environment-variable hook.
@@ -177,10 +219,11 @@ def build(work, tools, headers, jobs):
     builddir.mkdir(exist_ok=True)
     with (logdir / 'wine.log').open('w') as log:
         configuration = builddir / '.portable-configuration'
-        # 1.2 adds SDL2 (controllers other than PlayStation ones); an older tree is
-        # configured again so config.h gains SONAME_LIBSDL2.
+        # 1.2 adds SDL2 (controllers other than PlayStation ones); v2 sets OBJC
+        # explicitly to CLT clang so Objective-C checks (HAVE_MTLDEVICE_REGISTRYID)
+        # don't invoke /usr/bin/gcc -> xcrun under arch -x86_64 on macOS 27.
         if (not (builddir / 'Makefile').exists() or not configuration.exists()
-                or configuration.read_text() != 'vulkan-sdl2-enabled-v1\n'):
+                or configuration.read_text() != 'vulkan-sdl2-objc-v2\n'):
             run(['/usr/bin/arch', '-x86_64', wine / 'configure', '--prefix=/usr/local',
                  '--enable-archs=i386,x86_64', '--without-x', '--disable-tests',
                  '--without-gstreamer', '--with-vulkan',
@@ -194,12 +237,14 @@ def build(work, tools, headers, jobs):
                  'SDL2_LIBS=-L' + str(work / 'clean-deps/lib') + ' -lSDL2',
                  'LDFLAGS=-Wl,-headerpad,0x1000 -L' + str(deps / 'lib'), 'CFLAGS=' + flags,
                  'CROSSCFLAGS=' + flags,
-                 'CC=' + clt_bin + '/clang -arch x86_64', 'CXX=' + clt_bin + '/clang++ -arch x86_64'],
+                 'CC=' + clt_bin + '/clang -arch x86_64', 'CXX=' + clt_bin + '/clang++ -arch x86_64',
+                 'OBJC=' + clt_bin + '/clang -arch x86_64'],
                 cwd=builddir, env=env, stdout=log, stderr=subprocess.STDOUT)
-            configuration.write_text('vulkan-sdl2-enabled-v1\n')
+            configuration.write_text('vulkan-sdl2-objc-v2\n')
         config = builddir / 'include/config.h'
         text = config.read_text()
-        for required in ('#define HAVE_SYS_INOTIFY_H 1', '#define SONAME_LIBGNUTLS ', '#define SONAME_LIBFREETYPE ',
+        for required in ('#define HAVE_SYS_INOTIFY_H 1', '#define HAVE_MTLDEVICE_REGISTRYID 1',
+                         '#define SONAME_LIBGNUTLS ', '#define SONAME_LIBFREETYPE ',
                          '#define SONAME_LIBSDL2 '):
             if required not in text:
                 raise RuntimeError('Wine lacks a required dependency: ' + required)
